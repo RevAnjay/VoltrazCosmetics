@@ -299,10 +299,8 @@ public abstract class Cosmetic {
                             }
                             itemStack = resourceItem.clone();
                             modelData = -1;
-                        }else {
-                            plugin.getLogger().warning("Resource (" + plugin.getResourcePlugin().getProviderName() + ") plugin Not Found skipping cosmetic '" + key + "'");
-                            continue;
                         }
+                        // If resource plugin path not configured for this cosmetic, fall through to use vanilla material + modeldata
                     }
                     if(itemStack == null){
                         continue;
