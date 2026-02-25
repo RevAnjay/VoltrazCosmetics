@@ -4,12 +4,12 @@ import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.models.PacketReader;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.network.PlayerConnection;
+import net.minecraft.network.Connection;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
@@ -19,12 +19,12 @@ import java.lang.reflect.Method;
 public class PacketReaderHandler extends PacketReader{
 
     public void injectPlayer(Player player) {
-        EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer) player).getHandle();
         MCChannelHandler cdh = new MCChannelHandler(entityPlayer);
         ChannelPipeline pipeline = getPrivateChannelPipeline(entityPlayer.c);
         if(pipeline == null) return;
         for (String name : pipeline.toMap().keySet()) {
-            if (pipeline.get(name) instanceof NetworkManager) {
+            if (pipeline.get(name) instanceof Connection) {
                 pipeline.addBefore(name, "magic_cosmetics_packet_handler", cdh);
                 break;
             }
@@ -40,17 +40,17 @@ public class PacketReaderHandler extends PacketReader{
         });
     }
 
-    private ChannelPipeline getPrivateChannelPipeline(PlayerConnection playerConnection) {
+    private ChannelPipeline getPrivateChannelPipeline(ServerGamePacketListenerImpl playerConnection) {
         MagicCosmetics plugin = MagicCosmetics.getInstance();
         if(plugin.getServer().getPluginManager().isPluginEnabled("Denizen")){
             String className = "com.denizenscript.denizen.nms.v1_20.impl.network.handlers.DenizenNetworkManagerImpl";
             String methodName = "getConnection";
             try {
                 Class<?> clazz = Class.forName(className);
-                Class<?>[] typeParameters = { EntityPlayer.class };
+                Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
                 Object[] parameters = { playerConnection.f };
-                NetworkManager result = (NetworkManager) method.invoke(null, parameters);
+                Connection result = (Connection) method.invoke(null, parameters);
                 return result.n.pipeline();
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                      IllegalAccessException exception) {
@@ -58,9 +58,9 @@ public class PacketReaderHandler extends PacketReader{
             }
         }
         try {
-            Field privateNetworkManager = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
-            privateNetworkManager.setAccessible(true);
-            NetworkManager networkManager = (NetworkManager) privateNetworkManager.get(playerConnection);
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
+            privateConnection.setAccessible(true);
+            Connection networkManager = (Connection) privateConnection.get(playerConnection);
             return networkManager.n.pipeline();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             Bukkit.getLogger().severe("Error: Channel Pipeline not found");
@@ -68,17 +68,17 @@ public class PacketReaderHandler extends PacketReader{
         }
     }
 
-    private Channel getPrivateChannel(PlayerConnection playerConnection) {
+    private Channel getPrivateChannel(ServerGamePacketListenerImpl playerConnection) {
         MagicCosmetics plugin = MagicCosmetics.getInstance();
         if(plugin.getServer().getPluginManager().isPluginEnabled("Denizen")){
             String className = "com.denizenscript.denizen.nms.v1_20.impl.network.handlers.DenizenNetworkManagerImpl";
             String methodName = "getConnection";
             try {
                 Class<?> clazz = Class.forName(className);
-                Class<?>[] typeParameters = { EntityPlayer.class };
+                Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
                 Object[] parameters = { playerConnection.f };
-                NetworkManager result = (NetworkManager) method.invoke(null, parameters);
+                Connection result = (Connection) method.invoke(null, parameters);
                 return result.n;
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                      IllegalAccessException exception) {
@@ -86,9 +86,9 @@ public class PacketReaderHandler extends PacketReader{
             }
         }
         try {
-            Field privateNetworkManager = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
-            privateNetworkManager.setAccessible(true);
-            NetworkManager networkManager = (NetworkManager) privateNetworkManager.get(playerConnection);
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
+            privateConnection.setAccessible(true);
+            Connection networkManager = (Connection) privateConnection.get(playerConnection);
             return networkManager.n;
         } catch (NoSuchFieldException | IllegalAccessException e) {
             Bukkit.getLogger().severe("Error: Channel not found");

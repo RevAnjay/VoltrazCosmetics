@@ -14,32 +14,32 @@ import com.francobm.magicosmetics.nms.version.Version;
 import com.google.common.collect.Lists;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.syncher.DataWatcher;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.PlayerChunkMap;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.EntityLiving;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EnumItemSlot;
-import net.minecraft.world.entity.animal.EntityPufferFish;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
-import net.minecraft.world.inventory.Containers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.animal.Pufferfish;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.level.EnumGamemode;
+import net.minecraft.world.level.GameType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_21_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R1.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R1.util.CraftChatMessage;
-import org.bukkit.craftbukkit.v1_21_R1.util.CraftLocation;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.util.CraftChatMessage;
+import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.*;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
@@ -63,13 +63,13 @@ public class VersionHandler extends Version {
     @Override
     public void setSpectator(Player player) {
         player.setGameMode(GameMode.SPECTATOR);
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
         ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(Enum.valueOf(ClientboundPlayerInfoUpdatePacket.a.class, "UPDATE_GAME_MODE"), p);
         try {
             Field packetField = packet.getClass().getDeclaredField("c");
             packetField.setAccessible(true);
             ArrayList<ClientboundPlayerInfoUpdatePacket.b> list = Lists.newArrayList();
-            list.add(new ClientboundPlayerInfoUpdatePacket.b(player.getUniqueId(), p.getBukkitEntity().getProfile(),false, 0, EnumGamemode.b, p.O(), null));
+            list.add(new ClientboundPlayerInfoUpdatePacket.b(player.getUniqueId(), p.getBukkitEntity().getProfile(),false, 0, GameType.b, p.O(), null));
             packetField.set(packet, list);
             p.c.b(packet);
             PacketPlayOutGameStateChange packetPlayOutGameStateChange = new PacketPlayOutGameStateChange(PacketPlayOutGameStateChange.e, 3f);
@@ -137,56 +137,56 @@ public class VersionHandler extends Version {
 
     @Override
     public void equip(LivingEntity livingEntity, ItemSlot itemSlot, ItemStack itemStack) {
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         switch (itemSlot){
             case MAIN_HAND:
-                list.add(new Pair<>(EnumItemSlot.a, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.a, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case OFF_HAND:
-                list.add(new Pair<>(EnumItemSlot.b, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.b, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case BOOTS:
-                list.add(new Pair<>(EnumItemSlot.c, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.c, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case LEGGINGS:
-                list.add(new Pair<>(EnumItemSlot.d, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.d, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case CHESTPLATE:
-                list.add(new Pair<>(EnumItemSlot.e, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.e, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case HELMET:
-                list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.f, CraftItemStack.asNMSCopy(itemStack)));
                 break;
         }
         for(Player p : Bukkit.getOnlinePlayers()){
-            PlayerConnection connection = ((CraftPlayer)p).getHandle().c;
+            ServerGamePacketListenerImpl connection = ((CraftPlayer)p).getHandle().c;
             connection.b(new PacketPlayOutEntityEquipment(livingEntity.getEntityId(), list));
         }
     }
 
     @Override
     public void updateTitle(Player player, String title) {
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
         if(player.getOpenInventory().getTopInventory().getType() != InventoryType.CHEST) return;
         PacketPlayOutOpenWindow packet = null;
         switch (player.getOpenInventory().getTopInventory().getSize()/9){
             case 1:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, Containers.a, CraftChatMessage.fromStringOrNull(title));
+                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, MenuType.a, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 2:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, Containers.b, CraftChatMessage.fromStringOrNull(title));
+                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, MenuType.b, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 3:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, Containers.c, CraftChatMessage.fromStringOrNull(title));
+                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, MenuType.c, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 4:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, Containers.d, CraftChatMessage.fromStringOrNull(title));
+                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, MenuType.d, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 5:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, Containers.e, CraftChatMessage.fromStringOrNull(title));
+                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, MenuType.e, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 6:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, Containers.f, CraftChatMessage.fromStringOrNull(title));
+                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.j, MenuType.f, CraftChatMessage.fromStringOrNull(title));
                 break;
         }
         if(packet == null) return;
@@ -197,7 +197,7 @@ public class VersionHandler extends Version {
     @Override
     public void setCamera(Player player, Entity entity) {
         net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
         entityPlayer.c.b(new PacketPlayOutCamera(e));
     }
 
@@ -219,44 +219,44 @@ public class VersionHandler extends Version {
     }
 
     public PufferFish spawnFakePuffer(Location location) {
-        EntityPufferFish entityPufferFish = new EntityPufferFish(EntityTypes.aF, ((CraftWorld)location.getWorld()).getHandle());
+        Pufferfish entityPufferFish = new Pufferfish(EntityType.aF, ((CraftWorld)location.getWorld()).getHandle());
         entityPufferFish.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (PufferFish) entityPufferFish.getBukkitEntity();
     }
 
     @Override
     public ArmorStand spawnArmorStand(Location location) {
-        EntityArmorStand entityPufferFish = new EntityArmorStand(EntityTypes.d, ((CraftWorld)location.getWorld()).getHandle());
+        ArmorStand entityPufferFish = new ArmorStand(EntityType.d, ((CraftWorld)location.getWorld()).getHandle());
         entityPufferFish.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (ArmorStand) entityPufferFish.getBukkitEntity();
     }
 
     public void showEntity(LivingEntity entity, Player ...viewers) {
-        EntityLiving entityClient = ((CraftLivingEntity) entity).getHandle();
+        net.minecraft.world.entity.LivingEntity entityClient = ((CraftLivingEntity) entity).getHandle();
         entityClient.k(true);
-        DataWatcher dataWatcher = entityClient.ar();
-        PacketPlayOutSpawnEntity packet = new PacketPlayOutSpawnEntity(entityClient, 0, CraftLocation.toBlockPosition(entity.getLocation()));
-        PacketPlayOutEntityMetadata metadata = new PacketPlayOutEntityMetadata(entity.getEntityId(), dataWatcher.c());
+        SynchedEntityData dataWatcher = entityClient.ar();
+        ClientboundAddEntityPacket packet = new ClientboundAddEntityPacket(entityClient, 0, CraftLocation.toBlockPosition(entity.getLocation()));
+        ClientboundSetEntityDataPacket metadata = new ClientboundSetEntityDataPacket(entity.getEntityId(), dataWatcher.c());
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
             view.c.b(packet);
             view.c.b(metadata);
         }
     }
 
     public void despawnFakeEntity(Entity entity, Player ...viewers) {
-        PacketPlayOutEntityDestroy packet = new PacketPlayOutEntityDestroy(entity.getEntityId());
+        ClientboundRemoveEntitiesPacket packet = new ClientboundRemoveEntitiesPacket(entity.getEntityId());
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
             view.c.b(packet);
         }
     }
 
     public void attachFakeEntity(Entity entity, Entity leashed, Player ...viewers) {
-        EntityPlayer entityPlayer = ((CraftPlayer) entity).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer) entity).getHandle();
         PacketPlayOutAttachEntity packet = new PacketPlayOutAttachEntity(((CraftEntity)leashed).getHandle(), entityPlayer);
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
             view.c.b(packet);
         }
     }
@@ -270,7 +270,7 @@ public class VersionHandler extends Version {
         net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
         PacketPlayOutEntityTeleport packet = new PacketPlayOutEntityTeleport(entity);
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
             view.c.b(packet);
         }
     }
@@ -282,14 +282,14 @@ public class VersionHandler extends Version {
         net.minecraft.world.item.ItemStack cosmeticItem = CraftItemStack.asNMSCopy(cosmetic);
         CustomData copyCustomData = copy.a(DataComponents.b);
         CustomData cosmeticCustomData = cosmeticItem.a(DataComponents.b);
-        NBTTagCompound copyNBT = copyCustomData.c();
-        NBTTagCompound cosmeticNBT = cosmeticCustomData.c();
+        CompoundTag copyNBT = copyCustomData.c();
+        CompoundTag cosmeticNBT = cosmeticCustomData.c();
         for(String key : copyNBT.e()){
             Bukkit.getLogger().info("Key: " + key);
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
-                NBTTagCompound compound = copyNBT.p(key);
-                NBTTagCompound realCompound = cosmeticNBT.p(key);
+                CompoundTag compound = copyNBT.p(key);
+                CompoundTag realCompound = cosmeticNBT.p(key);
                 Set<String> keys = compound.e();
                 for (String compoundKey : keys){
                     Bukkit.getLogger().info("Key of key: " + compoundKey);
@@ -311,13 +311,13 @@ public class VersionHandler extends Version {
         if(!realItem.b(DataComponents.b)) return itemStack;
         CustomData copyCustomData = copy.a(DataComponents.b);
         CustomData realCustomData = realItem.a(DataComponents.b);
-        NBTTagCompound copyNBT = copyCustomData.c();
-        NBTTagCompound realNBT = realCustomData.c();
+        CompoundTag copyNBT = copyCustomData.c();
+        CompoundTag realNBT = realCustomData.c();
         for(String key : copyNBT.e()){
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
-                NBTTagCompound compound = copyNBT.p(key);
-                NBTTagCompound realCompound = realNBT.p(key);
+                CompoundTag compound = copyNBT.p(key);
+                CompoundTag realCompound = realNBT.p(key);
                 Set<String> keys = compound.e();
                 for (String compoundKey : keys){
                     if(!realCompound.e(compoundKey)) continue;
@@ -361,9 +361,9 @@ public class VersionHandler extends Version {
 
     @Override
     public IRangeManager createRangeManager(Entity entity) {
-        WorldServer level = ((CraftWorld)entity.getWorld()).getHandle();
+        ServerLevel level = ((CraftWorld)entity.getWorld()).getHandle();
 
-        PlayerChunkMap.EntityTracker trackedEntity;
+        ChunkMap.EntityTracker trackedEntity;
         try {
             trackedEntity = level.l().a.K.get(entity.getEntityId());
         } catch (NoSuchFieldError var8) {
@@ -371,7 +371,7 @@ public class VersionHandler extends Version {
 
             try {
                 Field trackerField = nmsEntity.getClass().getField("tracker");
-                trackedEntity = (PlayerChunkMap.EntityTracker)trackerField.get(nmsEntity);
+                trackedEntity = (ChunkMap.EntityTracker)trackerField.get(nmsEntity);
             } catch (IllegalAccessException | NoSuchFieldException var7) {
                 throw new RuntimeException(var7);
             }

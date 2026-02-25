@@ -6,30 +6,30 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.datafixers.util.Pair;
 import io.netty.buffer.Unpooled;
-import net.minecraft.core.Vector3f;
-import net.minecraft.network.PacketDataSerializer;
+import org.joml.Vector3f;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.syncher.DataWatcher;
-import net.minecraft.network.syncher.DataWatcherObject;
-import net.minecraft.network.syncher.DataWatcherRegistry;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.EntityLiving;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EnumItemSlot;
-import net.minecraft.world.entity.animal.EntityPufferFish;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.animal.Pufferfish;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_21_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_21_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftArmorStand;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftArmorStand;
+import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -37,19 +37,19 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 
 public class NPCHandler extends NPC {
-    private EntityArmorStand balloon;
-    private EntityLiving leashed;
+    private ArmorStand balloon;
+    private net.minecraft.world.entity.LivingEntity leashed;
 
     @Override
     public void spawnPunch(Player player, Location location) {
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        EntityLiving entityPunch = ((CraftLivingEntity)this.punch).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        net.minecraft.world.entity.LivingEntity entityPunch = ((CraftLivingEntity)this.punch).getHandle();
         entityPunch.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         float yaw = location.getYaw() * 256.0F / 360.0F;
-        PacketPlayOutSpawnEntity packetPlayOutSpawnEntity = new PacketPlayOutSpawnEntity(entityPunch.an(), entityPunch.cz(), location.getX(), location.getY(), location.getZ(), location.getPitch(), location.getYaw(), entityPunch.am(), 0, entityPunch.dr(), entityPunch.ct());
+        ClientboundAddEntityPacket packetPlayOutSpawnEntity = new ClientboundAddEntityPacket(entityPunch.an(), entityPunch.cz(), location.getX(), location.getY(), location.getZ(), location.getPitch(), location.getYaw(), entityPunch.am(), 0, entityPunch.dr(), entityPunch.ct());
         entityPlayer.c.b(packetPlayOutSpawnEntity);
         entityPlayer.c.b(new PacketPlayOutEntityHeadRotation(entityPunch, (byte) yaw));
-        entityPlayer.c.b(new PacketPlayOutEntityMetadata(entityPunch.an(), entityPunch.ar().c()));
+        entityPlayer.c.b(new ClientboundSetEntityDataPacket(entityPunch.an(), entityPunch.ar().c()));
         entityPlayer.c.b(new PacketPlayOutCamera(entityPunch));
     }
 
@@ -61,25 +61,25 @@ public class NPCHandler extends NPC {
     @Override
     public void addNPC(Player player, Location location) {
         MinecraftServer server = ((CraftServer) Bukkit.getServer()).getServer();
-        WorldServer world = ((CraftWorld) player.getWorld()).getHandle();
+        ServerLevel world = ((CraftWorld) player.getWorld()).getHandle();
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), player.getName());
-        EntityPlayer npc = new EntityPlayer(server, world, gameProfile, ClientInformation.a());
+        ServerPlayer npc = new EntityPlayer(server, world, gameProfile, ClientInformation.a());
 
-        EntityArmorStand armorStand = new EntityArmorStand(EntityTypes.d, world);
+        ArmorStand armorStand = new ArmorStand(EntityType.d, world);
         armorStand.k(true); //Invisible
         armorStand.n(true); //Invulnerable
         armorStand.b(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), 0);
         npc.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), 0);
         //balloon
-        balloon = new EntityArmorStand(EntityTypes.d, world);
+        balloon = new ArmorStand(EntityType.d, world);
         balloon.n(true); //invulnerable true
         balloon.k(true); //Invisible true
-        EntityArmorStand entityPunch = new EntityArmorStand(EntityTypes.d, world);
+        ArmorStand entityPunch = new ArmorStand(EntityType.d, world);
         entityPunch.n(true);
         entityPunch.k(true);
         entityPunch.b(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), player.getLocation().getPitch());
-        leashed = new EntityPufferFish(EntityTypes.aF, world);
-        ((EntityPufferFish)leashed).b(npc, true);
+        leashed = new Pufferfish(EntityType.aF, world);
+        ((Pufferfish)leashed).b(npc, true);
         leashed.n(true);
         leashed.k(true);
         leashed.d(true); //silent true
@@ -102,39 +102,39 @@ public class NPCHandler extends NPC {
 
     @Override
     public void removeNPC(Player player) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().c;
-        connection.b(new PacketPlayOutEntityDestroy(armorStand.getEntityId(), entity.getEntityId(), punch.getEntityId(), balloon.an(), leashed.an()));
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().c;
+        connection.b(new ClientboundRemoveEntitiesPacket(armorStand.getEntityId(), entity.getEntityId(), punch.getEntityId(), balloon.an(), leashed.an()));
     }
 
     @Override
     public void removeBalloon(Player player) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().c;
-        connection.b(new PacketPlayOutEntityDestroy(balloon.an(), leashed.an()));
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().c;
+        connection.b(new ClientboundRemoveEntitiesPacket(balloon.an(), leashed.an()));
     }
 
     @Override
     public void spawnNPC(Player player) {
         Location npcLocation = entity.getLocation();
         Location armorStandLocation = armorStand.getLocation();
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        EntityPlayer npc = ((CraftPlayer)this.entity).getHandle();
-        EntityArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer npc = ((CraftPlayer)this.entity).getHandle();
+        ArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
         armorStand.n(true); //invulnerable true
         armorStand.k(true); //Invisible true
         npc.c = entityPlayer.c;
-        PacketPlayOutSpawnEntity npcSpawnPacket = new PacketPlayOutSpawnEntity(npc.an(), npc.cz(), npcLocation.getX(), npcLocation.getY(), npcLocation.getZ(), npcLocation.getPitch(), npcLocation.getYaw(), npc.am(), 0, npc.dr(), npc.ct());
-        PacketPlayOutSpawnEntity armorStandSpawnPacket = new PacketPlayOutSpawnEntity(armorStand.an(), armorStand.cz(), armorStandLocation.getX(), armorStandLocation.getY(), armorStandLocation.getZ(), armorStandLocation.getPitch(), armorStandLocation.getYaw(), armorStand.am(), 0, armorStand.dr(), armorStand.ct());
+        ClientboundAddEntityPacket npcSpawnPacket = new ClientboundAddEntityPacket(npc.an(), npc.cz(), npcLocation.getX(), npcLocation.getY(), npcLocation.getZ(), npcLocation.getPitch(), npcLocation.getYaw(), npc.am(), 0, npc.dr(), npc.ct());
+        ClientboundAddEntityPacket armorStandSpawnPacket = new ClientboundAddEntityPacket(armorStand.an(), armorStand.cz(), armorStandLocation.getX(), armorStandLocation.getY(), armorStandLocation.getZ(), armorStandLocation.getPitch(), armorStandLocation.getYaw(), armorStand.am(), 0, armorStand.dr(), armorStand.ct());
         entityPlayer.c.b(new ClientboundPlayerInfoUpdatePacket(Enum.valueOf(ClientboundPlayerInfoUpdatePacket.a.class, "ADD_PLAYER"), npc));
         entityPlayer.c.b(npcSpawnPacket);
         entityPlayer.c.b(new PacketPlayOutEntityHeadRotation(npc, (byte) (player.getLocation().getYaw() * 256 / 360)));
         entityPlayer.c.b(armorStandSpawnPacket);
         //client settings
-        entityPlayer.c.b(new PacketPlayOutEntityMetadata(armorStand.an(), armorStand.ar().c()));
+        entityPlayer.c.b(new ClientboundSetEntityDataPacket(armorStand.an(), armorStand.ar().c()));
         //
-        DataWatcher watcher = npc.ar();
-        byte bitmask = ((CraftPlayer)player).getHandle().ar().a(new DataWatcherObject<>(17, DataWatcherRegistry.a));
-        watcher.a(new DataWatcherObject<>(17, DataWatcherRegistry.a), bitmask);
-        entityPlayer.c.b(new PacketPlayOutEntityMetadata(npc.an(), watcher.c()));
+        SynchedEntityData watcher = npc.ar();
+        byte bitmask = ((CraftPlayer)player).getHandle().ar().a(new EntityDataAccessor<>(17, EntityDataSerializers.a));
+        watcher.a(new EntityDataAccessor<>(17, EntityDataSerializers.a), bitmask);
+        entityPlayer.c.b(new ClientboundSetEntityDataPacket(npc.an(), watcher.c()));
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -146,11 +146,11 @@ public class NPCHandler extends NPC {
 
     @Override
     public void lookNPC(Player player, float yaw) {
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        EntityArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
         armorStand.n(true); //invulnerable true
         armorStand.k(true); //Invisible true
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().c;
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().c;
         connection.b(new PacketPlayOutEntityHeadRotation(armorStand, (byte)(yaw * 256 / 360)));
         connection.b(new PacketPlayOutEntity.PacketPlayOutEntityLook(armorStand.an(), (byte)(yaw * 256 / 360), (byte)0, true));
 
@@ -161,21 +161,21 @@ public class NPCHandler extends NPC {
 
     @Override
     public void armorStandSetItem(Player player, ItemStack itemStack) {
-        EntityArmorStand entityPlayer = ((CraftArmorStand)this.armorStand).getHandle();
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().c;
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-        list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
+        ArmorStand entityPlayer = ((CraftArmorStand)this.armorStand).getHandle();
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().c;
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        list.add(new Pair<>(EquipmentSlot.f, CraftItemStack.asNMSCopy(itemStack)));
         connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
     }
 
     @Override
     public void balloonSetItem(Player player, ItemStack itemStack) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().c;
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().c;
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         if(isBigHead()){
-            list.add(new Pair<>(EnumItemSlot.a, CraftItemStack.asNMSCopy(itemStack)));
+            list.add(new Pair<>(EquipmentSlot.a, CraftItemStack.asNMSCopy(itemStack)));
         }else {
-            list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
+            list.add(new Pair<>(EquipmentSlot.f, CraftItemStack.asNMSCopy(itemStack)));
         }
         connection.b(new PacketPlayOutEntityEquipment(balloon.an(), list));
     }
@@ -184,8 +184,8 @@ public class NPCHandler extends NPC {
     public void balloonNPC(Player player, Location location, ItemStack itemStack, boolean bigHead){
         removeBalloon(player);
         //balloon
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        EntityPlayer realPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ServerPlayer realPlayer = ((CraftPlayer)player).getHandle();
         balloonPosition = location.clone();
         Location balloonPos = location.clone();
         balloonPos.setX(balloonPos.getY()-1.3);
@@ -196,44 +196,44 @@ public class NPCHandler extends NPC {
         if(isBigHead()){
             balloon.d(new Vector3f(balloon.C().b(), 0, 0));
         }
-        PacketPlayOutSpawnEntity balloonSpawnPacket = new PacketPlayOutSpawnEntity(balloon.an(), balloon.cz(), balloonPos.getX(), balloonPos.getY(), balloonPos.getZ(), balloonPos.getPitch(), balloonPos.getYaw(), balloon.am(), 0, balloon.dr(), balloon.ct());
-        PacketPlayOutSpawnEntity leashedSpawnPacket = new PacketPlayOutSpawnEntity(leashed.an(), leashed.cz(), balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getPitch(), balloonPosition.getYaw(), leashed.am(), 0, leashed.dr(), leashed.ct());
+        ClientboundAddEntityPacket balloonSpawnPacket = new ClientboundAddEntityPacket(balloon.an(), balloon.cz(), balloonPos.getX(), balloonPos.getY(), balloonPos.getZ(), balloonPos.getPitch(), balloonPos.getYaw(), balloon.am(), 0, balloon.dr(), balloon.ct());
+        ClientboundAddEntityPacket leashedSpawnPacket = new ClientboundAddEntityPacket(leashed.an(), leashed.cz(), balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getPitch(), balloonPosition.getYaw(), leashed.am(), 0, leashed.dr(), leashed.ct());
         realPlayer.c.b(balloonSpawnPacket);
         realPlayer.c.b(leashedSpawnPacket);
-        realPlayer.c.b(new PacketPlayOutEntityMetadata(balloon.an(), balloon.ar().c()));
-        realPlayer.c.b(new PacketPlayOutEntityMetadata(leashed.an(), leashed.ar().c()));
+        realPlayer.c.b(new ClientboundSetEntityDataPacket(balloon.an(), balloon.ar().c()));
+        realPlayer.c.b(new ClientboundSetEntityDataPacket(leashed.an(), leashed.ar().c()));
         realPlayer.c.b(new PacketPlayOutAttachEntity(leashed, entityPlayer));
         balloonSetItem(player, itemStack);
     }
 
     @Override
     public void equipNPC(Player player, ItemSlot itemSlot, ItemStack itemStack) {
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().c;
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().c;
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         switch (itemSlot){
             case MAIN_HAND:
-                list.add(new Pair<>(EnumItemSlot.a, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.a, CraftItemStack.asNMSCopy(itemStack)));
                 connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
                 break;
             case OFF_HAND:
-                list.add(new Pair<>(EnumItemSlot.b, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.b, CraftItemStack.asNMSCopy(itemStack)));
                 connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
                 break;
             case BOOTS:
-                list.add(new Pair<>(EnumItemSlot.c, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.c, CraftItemStack.asNMSCopy(itemStack)));
                 connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
                 break;
             case LEGGINGS:
-                list.add(new Pair<>(EnumItemSlot.d, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.d, CraftItemStack.asNMSCopy(itemStack)));
                 connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
                 break;
             case CHESTPLATE:
-                list.add(new Pair<>(EnumItemSlot.e, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.e, CraftItemStack.asNMSCopy(itemStack)));
                 connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
                 break;
             case HELMET:
-                list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.f, CraftItemStack.asNMSCopy(itemStack)));
                 connection.b(new PacketPlayOutEntityEquipment(entityPlayer.an(), list));
                 break;
         }
@@ -242,13 +242,13 @@ public class NPCHandler extends NPC {
     @Override
     public void addPassenger(Player player) {
         if(entity == null) return;
-        EntityArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+        ArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
             packetDataSerializer.c(entityPlayer.an());
             packetDataSerializer.a(new int[]{armorStand.an()});
-            return PacketPlayOutMount.a.decode(packetDataSerializer);
+            return ClientboundSetPassengersPacket.a.decode(packetDataSerializer);
         });
         p.c.b(packetPlayOutMount);
     }
@@ -256,11 +256,11 @@ public class NPCHandler extends NPC {
     public void addPassenger(Player player, net.minecraft.world.entity.Entity entity1, net.minecraft.world.entity.Entity entity2) {
         if(entity1 == null) return;
         if(entity2 == null) return;
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
-        PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
+        ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
             packetDataSerializer.c(entity1.an());
             packetDataSerializer.a(new int[]{entity2.an()});
-            return PacketPlayOutMount.a.decode(packetDataSerializer);
+            return ClientboundSetPassengersPacket.a.decode(packetDataSerializer);
         });
         p.c.b(packetPlayOutMount);
     }
@@ -270,7 +270,7 @@ public class NPCHandler extends NPC {
             animationBigHead(player);
             return;
         }
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
         //
         if(balloonPosition == null) return;
         if (!floatLoop) {
@@ -306,13 +306,13 @@ public class NPCHandler extends NPC {
         }
         leashed.a(balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
         balloon.a(balloonPosition.getX(), balloonPosition.getY() - 1.3, balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
-        p.c.b(new PacketPlayOutEntityMetadata(balloon.an(), balloon.ar().c()));
+        p.c.b(new ClientboundSetEntityDataPacket(balloon.an(), balloon.ar().c()));
         p.c.b(new PacketPlayOutEntityTeleport(leashed));
         p.c.b(new PacketPlayOutEntityTeleport(balloon));
     }
 
     public void animationBigHead(Player player){
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
         //
         if(balloonPosition == null) return;
         if (!floatLoop) {
@@ -348,7 +348,7 @@ public class NPCHandler extends NPC {
         }
         leashed.a(balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
         balloon.a(balloonPosition.getX(), balloonPosition.getY() - 1.3, balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
-        p.c.b(new PacketPlayOutEntityMetadata(balloon.an(), balloon.ar().c()));
+        p.c.b(new ClientboundSetEntityDataPacket(balloon.an(), balloon.ar().c()));
         p.c.b(new PacketPlayOutEntityTeleport(leashed));
         p.c.b(new PacketPlayOutEntityTeleport(balloon));
     }
@@ -358,8 +358,8 @@ public class NPCHandler extends NPC {
         return npcs.get(player.getUniqueId());
     }
 
-    private <T> T createDataSerializer(UnsafeFunction<PacketDataSerializer, T> callback) {
-        PacketDataSerializer data = new PacketDataSerializer(Unpooled.buffer());
+    private <T> T createDataSerializer(UnsafeFunction<FriendlyByteBuf, T> callback) {
+        FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
         T result = null;
         try {
             result = callback.apply(data);
@@ -377,7 +377,7 @@ public class NPCHandler extends NPC {
     }
 
     public String[] getFromPlayer(Player playerBukkit) throws NoSuchElementException{
-        EntityPlayer playerNMS = ((CraftPlayer) playerBukkit).getHandle();
+        ServerPlayer playerNMS = ((CraftPlayer) playerBukkit).getHandle();
         GameProfile profile = playerNMS.getBukkitEntity().getProfile();
 
         Property property = profile.getProperties().get("textures").iterator().next();
