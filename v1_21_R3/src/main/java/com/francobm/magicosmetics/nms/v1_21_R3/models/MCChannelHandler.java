@@ -11,11 +11,11 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import net.minecraft.network.PacketDataSerializer;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.WorldServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.entity.LevelEntityGetter;
@@ -24,13 +24,14 @@ import org.bukkit.craftbukkit.v1_21_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 public class MCChannelHandler extends ChannelDuplexHandler {
 
     private static Method entityGetter;
 
     static {
-        for(Method method : WorldServer.class.getMethods()) {
+        for(Method method : ServerLevel.class.getMethods()) {
             if(LevelEntityGetter.class.isAssignableFrom(method.getReturnType()) && method.getReturnType() != LevelEntityGetter.class) {
                 entityGetter = method;
                 break;
@@ -38,40 +39,40 @@ public class MCChannelHandler extends ChannelDuplexHandler {
         }
     }
 
-    private final EntityPlayer player;
+    private final ServerPlayer player;
 
-    public MCChannelHandler(EntityPlayer player){
+    public MCChannelHandler(ServerPlayer player){
         this.player = player;
     }
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if(msg instanceof PacketPlayOutSetSlot) {
-            PacketPlayOutSetSlot packetPlayOutSetSlot = (PacketPlayOutSetSlot) msg;
-            if(packetPlayOutSetSlot.b() == 0)
-                CallUpdateInvEvent(packetPlayOutSetSlot.e(), packetPlayOutSetSlot.f());
+        if(msg instanceof ClientboundContainerSetSlotPacket) {
+            ClientboundContainerSetSlotPacket packetPlayOutSetSlot = (ClientboundContainerSetSlotPacket) msg;
+            if(packetPlayOutSetSlot.getContainerId() == 0)
+                CallUpdateInvEvent(packetPlayOutSetSlot.getSlot(), packetPlayOutSetSlot.getItem());
         }else if(msg instanceof ClientboundBundlePacket) {
             ClientboundBundlePacket packet = (ClientboundBundlePacket) msg;
-            for(Packet<?> subPacket : packet.b()){
-                if(subPacket instanceof PacketPlayOutSpawnEntity) {
-                    PacketPlayOutSpawnEntity otherPacket = (PacketPlayOutSpawnEntity) subPacket;
-                    handleEntitySpawn(otherPacket.b());
-                }else if(subPacket instanceof PacketPlayOutEntityDestroy) {
-                    PacketPlayOutEntityDestroy otherPacket = (PacketPlayOutEntityDestroy) subPacket;
-                    for(int id : otherPacket.b()){
+            for(Packet<?> subPacket : packet.subPackets()){
+                if(subPacket instanceof ClientboundAddEntityPacket) {
+                    ClientboundAddEntityPacket otherPacket = (ClientboundAddEntityPacket) subPacket;
+                    handleEntitySpawn(otherPacket.getId());
+                }else if(subPacket instanceof ClientboundRemoveEntitiesPacket) {
+                    ClientboundRemoveEntitiesPacket otherPacket = (ClientboundRemoveEntitiesPacket) subPacket;
+                    for(int id : otherPacket.getEntityIds()){
                         handleEntityDespawn(id);
                     }
                 }
             }
-        }else if(msg instanceof PacketPlayOutSpawnEntity) {
-            PacketPlayOutSpawnEntity otherPacket = (PacketPlayOutSpawnEntity) msg;
-            handleEntitySpawn(otherPacket.b());
-        }else if(msg instanceof PacketPlayOutEntityDestroy) {
-            PacketPlayOutEntityDestroy otherPacket = (PacketPlayOutEntityDestroy) msg;
-            for(int id : otherPacket.b()){
+        }else if(msg instanceof ClientboundAddEntityPacket) {
+            ClientboundAddEntityPacket otherPacket = (ClientboundAddEntityPacket) msg;
+            handleEntitySpawn(otherPacket.getId());
+        }else if(msg instanceof ClientboundRemoveEntitiesPacket) {
+            ClientboundRemoveEntitiesPacket otherPacket = (ClientboundRemoveEntitiesPacket) msg;
+            for(int id : otherPacket.getEntityIds()){
                 handleEntityDespawn(id);
             }
-        }else if(msg instanceof PacketPlayOutMount) {
-            PacketPlayOutMount otherPacket = (PacketPlayOutMount) msg;
+        }else if(msg instanceof ClientboundSetPassengersPacket) {
+            ClientboundSetPassengersPacket otherPacket = (ClientboundSetPassengersPacket) msg;
             msg = handleEntityMount(otherPacket);
         }
         super.write(ctx, msg, promise);
@@ -79,7 +80,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if(msg instanceof PacketPlayInArmAnimation){
+        if(msg instanceof ServerboundSwingPacket){
             if(checkInZone()){
                 openMenu();
             }
@@ -122,10 +123,10 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
 
-    private PacketPlayOutMount handleEntityMount(PacketPlayOutMount packetPlayOutMount) {
-        int id = packetPlayOutMount.e();
-        int[] ids =packetPlayOutMount.b();
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.y(), id);
+    private ClientboundSetPassengersPacket handleEntityMount(ClientboundSetPassengersPacket packetPlayOutMount) {
+        int id = packetPlayOutMount.getVehicle();
+        int[] ids = packetPlayOutMount.getPassengers();
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
         if(!(entity instanceof Player)) return packetPlayOutMount;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -139,14 +140,14 @@ public class MCChannelHandler extends ChannelDuplexHandler {
             if(ids[i] == bag.getBackpackId()) continue;
             newIds[i + 1] = ids[i];
         }
-        PacketDataSerializer data = new PacketDataSerializer(Unpooled.buffer());
-        data.c(id);
-        data.a(newIds);
-        return PacketPlayOutMount.a.decode(data);
+        FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
+        data.writeVarInt(id);
+        data.writeVarIntArray(newIds);
+        return ClientboundSetPassengersPacket.STREAM_CODEC.decode(data);
     }
 
     private void handleEntitySpawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.y(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -156,7 +157,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private void handleEntityDespawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.y(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -165,16 +166,16 @@ public class MCChannelHandler extends ChannelDuplexHandler {
         playerData.getBag().despawn(this.player.getBukkitEntity());
     }
 
-    protected org.bukkit.entity.Entity getEntityAsync(WorldServer world, int id) {
-        Entity entity = getEntityGetter(world).a(id);
+    protected org.bukkit.entity.Entity getEntityAsync(ServerLevel world, int id) {
+        net.minecraft.world.entity.Entity entity = getEntityGetter(world).get(id);
         return entity == null ? null : entity.getBukkitEntity();
     }
 
-    public static LevelEntityGetter<Entity> getEntityGetter(WorldServer level) {
+    public static LevelEntityGetter<Entity> getEntityGetter(ServerLevel level) {
         if(entityGetter == null)
-            return level.O.d();
+            return level.getEntities();
         try {
-            return (LevelEntityGetter<Entity>) entityGetter.invoke(level);
+            return (LevelEntityGetter<net.minecraft.world.entity.Entity>) entityGetter.invoke(level);
         }catch (Throwable ignored) {
             return null;
         }

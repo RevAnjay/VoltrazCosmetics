@@ -10,27 +10,27 @@ import java.util.Set;
 
 public class RangeManager implements IRangeManager {
 
-    private final ChunkMap.EntityTracker tracked;
+    private final ChunkMap.TrackedEntity tracked;
 
-    public RangeManager(ChunkMap.EntityTracker tracked) {
+    public RangeManager(ChunkMap.TrackedEntity tracked) {
         this.tracked = tracked;
     }
 
     @Override
     public void addPlayer(Player player) {
-        tracked.f.add(((CraftPlayer) player).getHandle().c);
+        tracked.seenBy.add(((CraftPlayer) player).getHandle().connection);
     }
 
     @Override
     public void removePlayer(Player player) {
-        tracked.f.remove(((CraftPlayer) player).getHandle().c);
+        tracked.seenBy.remove(((CraftPlayer) player).getHandle().connection);
     }
 
     @Override
     public Set<Player> getPlayerInRange() {
         Set<Player> list = new HashSet<>();
         if(tracked == null) return list;
-        tracked.f.forEach(serverServerGamePacketListenerImpl -> list.add(serverServerGamePacketListenerImpl.o().getBukkitEntity()));
+        tracked.seenBy.forEach(serverServerGamePacketListenerImpl -> list.add(serverServerGamePacketListenerImpl.getPlayer().getBukkitEntity()));
         return list;
     }
 }

@@ -6,20 +6,22 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.datafixers.util.Pair;
 import io.netty.buffer.Unpooled;
-import net.minecraft.core.Vector3f;
-import net.minecraft.network.PacketDataSerializer;
+import net.minecraft.core.Rotations;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.syncher.DataWatcher;
-import net.minecraft.network.syncher.DataWatcherObject;
-import net.minecraft.network.syncher.DataWatcherRegistry;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.animal.EntityPufferFish;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.entity.animal.Pufferfish;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_21_R3.CraftServer;
@@ -35,20 +37,20 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 
 public class NPCHandler extends NPC {
-    private EntityArmorStand balloon;
-    private EntityLiving leashed;
+    private ArmorStand balloon;
+    private net.minecraft.world.entity.LivingEntity leashed;
 
     @Override
     public void spawnPunch(Player player, Location location) {
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        EntityLiving entityPunch = ((CraftLivingEntity)this.punch).getHandle();
-        entityPunch.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        net.minecraft.world.entity.LivingEntity entityPunch = ((CraftLivingEntity)this.punch).getHandle();
+        entityPunch.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         float yaw = location.getYaw() * 256.0F / 360.0F;
-        PacketPlayOutSpawnEntity packetPlayOutSpawnEntity = new PacketPlayOutSpawnEntity(entityPunch.ar(), entityPunch.cG(), location.getX(), location.getY(), location.getZ(), location.getPitch(), location.getYaw(), entityPunch.aq(), 0, entityPunch.dy(), entityPunch.cA());
-        entityPlayer.f.b(packetPlayOutSpawnEntity);
-        entityPlayer.f.b(new PacketPlayOutEntityHeadRotation(entityPunch, (byte) yaw));
-        entityPlayer.f.b(new PacketPlayOutEntityMetadata(entityPunch.ar(), entityPunch.au().c()));
-        entityPlayer.f.b(new PacketPlayOutCamera(entityPunch));
+        ClientboundAddEntityPacket packetPlayOutSpawnEntity = new ClientboundAddEntityPacket(entityPunch.getId(), entityPunch.getUUID(), location.getX(), location.getY(), location.getZ(), location.getPitch(), location.getYaw(), entityPunch.getType(), 0, entityPunch.getDeltaMovement(), entityPunch.getYRot());
+        entityPlayer.connection.send(packetPlayOutSpawnEntity);
+        entityPlayer.connection.send(new ClientboundRotateHeadPacket(entityPunch, (byte) yaw));
+        entityPlayer.connection.send(new ClientboundSetEntityDataPacket(entityPunch.getId(), entityPunch.getEntityData().getNonDefaultValues()));
+        entityPlayer.connection.send(new ClientboundSetCameraPacket(entityPunch));
     }
 
     @Override
@@ -59,28 +61,28 @@ public class NPCHandler extends NPC {
     @Override
     public void addNPC(Player player, Location location) {
         MinecraftServer server = ((CraftServer) Bukkit.getServer()).getServer();
-        WorldServer world = ((CraftWorld) player.getWorld()).getHandle();
+        ServerLevel world = ((CraftWorld) player.getWorld()).getHandle();
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), player.getName());
-        EntityPlayer npc = new EntityPlayer(server, world, gameProfile, ClientInformation.a());
+        ServerPlayer npc = new ServerPlayer(server, world, gameProfile, ClientInformation.createDefault());
 
-        EntityArmorStand armorStand = new EntityArmorStand(EntityTypes.f, world);
-        armorStand.k(true); //Invisible
-        armorStand.n(true); //Invulnerable
-        armorStand.b(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), 0);
-        npc.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), 0);
+        ArmorStand armorStand = new ArmorStand(EntityType.ARMOR_STAND, world);
+        armorStand.setInvisible(true);
+        armorStand.setInvulnerable(true);
+        armorStand.absMoveTo(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), 0);
+        npc.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), 0);
         //balloon
-        balloon = new EntityArmorStand(EntityTypes.f, world);
-        balloon.n(true); //invulnerable true
-        balloon.k(true); //Invisible true
-        EntityArmorStand entityPunch = new EntityArmorStand(EntityTypes.f, world);
-        entityPunch.n(true);
-        entityPunch.k(true);
-        entityPunch.b(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), player.getLocation().getPitch());
-        leashed = new EntityPufferFish(EntityTypes.aW, world);
-        ((EntityPufferFish)leashed).b(npc, true);
-        leashed.n(true);
-        leashed.k(true);
-        leashed.d(true); //silent true
+        balloon = new ArmorStand(EntityType.ARMOR_STAND, world);
+        balloon.setInvulnerable(true);
+        balloon.setInvisible(true);
+        ArmorStand entityPunch = new ArmorStand(EntityType.ARMOR_STAND, world);
+        entityPunch.setInvulnerable(true);
+        entityPunch.setInvisible(true);
+        entityPunch.absMoveTo(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), player.getLocation().getPitch());
+        leashed = new Pufferfish(EntityType.PUFFERFISH, world);
+        ((Pufferfish)leashed).setLeashData(null);
+        leashed.setInvulnerable(true);
+        leashed.setInvisible(true);
+        leashed.setSilent(true);
         //balloon
         //skin
         try {
@@ -100,43 +102,43 @@ public class NPCHandler extends NPC {
 
     @Override
     public void removeNPC(Player player) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        connection.b(new PacketPlayOutEntityDestroy(armorStand.getEntityId(), entity.getEntityId(), punch.getEntityId(), balloon.ar(), leashed.ar()));
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        connection.send(new ClientboundRemoveEntitiesPacket(armorStand.getEntityId(), entity.getEntityId(), punch.getEntityId(), balloon.getId(), leashed.getId()));
     }
 
     @Override
     public void removeBalloon(Player player) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        connection.b(new PacketPlayOutEntityDestroy(balloon.ar(), leashed.ar()));
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        connection.send(new ClientboundRemoveEntitiesPacket(balloon.getId(), leashed.getId()));
     }
 
     @Override
     public void spawnNPC(Player player) {
         Location npcLocation = entity.getLocation();
         Location armorStandLocation = armorStand.getLocation();
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        EntityPlayer npc = ((CraftPlayer)this.entity).getHandle();
-        EntityArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
-        armorStand.n(true); //invulnerable true
-        armorStand.k(true); //Invisible true
-        npc.f = entityPlayer.f;
-        PacketPlayOutSpawnEntity npcSpawnPacket = new PacketPlayOutSpawnEntity(npc.ar(), npc.cG(), npcLocation.getX(), npcLocation.getY(), npcLocation.getZ(), npcLocation.getPitch(), npcLocation.getYaw(), npc.aq(), 0, npc.dy(), npc.cA());
-        PacketPlayOutSpawnEntity armorStandSpawnPacket = new PacketPlayOutSpawnEntity(armorStand.ar(), armorStand.cG(), armorStandLocation.getX(), armorStandLocation.getY(), armorStandLocation.getZ(), armorStandLocation.getPitch(), armorStandLocation.getYaw(), armorStand.aq(), 0, armorStand.dy(), armorStand.cA());
-        entityPlayer.f.b(new ClientboundPlayerInfoUpdatePacket(Enum.valueOf(ClientboundPlayerInfoUpdatePacket.a.class, "ADD_PLAYER"), npc));
-        entityPlayer.f.b(npcSpawnPacket);
-        entityPlayer.f.b(new PacketPlayOutEntityHeadRotation(npc, (byte) (player.getLocation().getYaw() * 256 / 360)));
-        entityPlayer.f.b(armorStandSpawnPacket);
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer npc = ((CraftPlayer)this.entity).getHandle();
+        ArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
+        armorStand.setInvulnerable(true);
+        armorStand.setInvisible(true);
+        npc.connection = entityPlayer.connection;
+        ClientboundAddEntityPacket npcSpawnPacket = new ClientboundAddEntityPacket(npc.getId(), npc.getUUID(), npcLocation.getX(), npcLocation.getY(), npcLocation.getZ(), npcLocation.getPitch(), npcLocation.getYaw(), npc.getType(), 0, npc.getDeltaMovement(), npc.getYRot());
+        ClientboundAddEntityPacket armorStandSpawnPacket = new ClientboundAddEntityPacket(armorStand.getId(), armorStand.getUUID(), armorStandLocation.getX(), armorStandLocation.getY(), armorStandLocation.getZ(), armorStandLocation.getPitch(), armorStandLocation.getYaw(), armorStand.getType(), 0, armorStand.getDeltaMovement(), armorStand.getYRot());
+        entityPlayer.connection.send(new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, npc));
+        entityPlayer.connection.send(npcSpawnPacket);
+        entityPlayer.connection.send(new ClientboundRotateHeadPacket(npc, (byte) (player.getLocation().getYaw() * 256 / 360)));
+        entityPlayer.connection.send(armorStandSpawnPacket);
         //client settings
-        entityPlayer.f.b(new PacketPlayOutEntityMetadata(armorStand.ar(), armorStand.au().c()));
+        entityPlayer.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
         //
-        DataWatcher watcher = npc.au();
-        byte bitmask = ((CraftPlayer)player).getHandle().au().a(new DataWatcherObject<>(17, DataWatcherRegistry.a));
-        watcher.a(new DataWatcherObject<>(17, DataWatcherRegistry.a), bitmask);
-        entityPlayer.f.b(new PacketPlayOutEntityMetadata(npc.ar(), watcher.c()));
+        SynchedEntityData watcher = npc.getEntityData();
+        byte bitmask = ((CraftPlayer)player).getHandle().getEntityData().get(new EntityDataAccessor<>(17, EntityDataSerializers.BYTE));
+        watcher.set(new EntityDataAccessor<>(17, EntityDataSerializers.BYTE), bitmask);
+        entityPlayer.connection.send(new ClientboundSetEntityDataPacket(npc.getId(), watcher.getNonDefaultValues()));
         new BukkitRunnable() {
             @Override
             public void run() {
-                entityPlayer.f.b(new ClientboundPlayerInfoRemovePacket(Collections.singletonList(npc.getBukkitEntity().getUniqueId())));
+                entityPlayer.connection.send(new ClientboundPlayerInfoRemovePacket(Collections.singletonList(npc.getBukkitEntity().getUniqueId())));
             }
         }.runTaskLater(Objects.requireNonNull(Bukkit.getPluginManager().getPlugin("MagicCosmetics")), 20L);
         addPassenger(player);
@@ -144,95 +146,94 @@ public class NPCHandler extends NPC {
 
     @Override
     public void lookNPC(Player player, float yaw) {
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        EntityArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
-        armorStand.n(true); //invulnerable true
-        armorStand.k(true); //Invisible true
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        connection.b(new PacketPlayOutEntityHeadRotation(armorStand, (byte)(yaw * 256 / 360)));
-        connection.b(new PacketPlayOutEntity.PacketPlayOutEntityLook(armorStand.ar(), (byte)(yaw * 256 / 360), (byte)0, true));
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
+        armorStand.setInvulnerable(true);
+        armorStand.setInvisible(true);
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        connection.send(new ClientboundRotateHeadPacket(armorStand, (byte)(yaw * 256 / 360)));
+        connection.send(new ClientboundMoveEntityPacket.Rot(armorStand.getId(), (byte)(yaw * 256 / 360), (byte)0, true));
 
-        connection.b(new PacketPlayOutEntityHeadRotation(entityPlayer, (byte)(yaw * 256 / 360)));
-        connection.b(new PacketPlayOutEntity.PacketPlayOutEntityLook(entityPlayer.ar(), (byte)(yaw * 256 / 360), (byte)0, true));
-        //connection.b(new PacketPlayOutEntityTeleport(entityPlayer));
+        connection.send(new ClientboundRotateHeadPacket(entityPlayer, (byte)(yaw * 256 / 360)));
+        connection.send(new ClientboundMoveEntityPacket.Rot(entityPlayer.getId(), (byte)(yaw * 256 / 360), (byte)0, true));
     }
 
     @Override
     public void armorStandSetItem(Player player, ItemStack itemStack) {
-        EntityArmorStand entityPlayer = ((CraftArmorStand)this.armorStand).getHandle();
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-        list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
-        connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+        ArmorStand entityPlayer = ((CraftArmorStand)this.armorStand).getHandle();
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
+        connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
     }
 
     @Override
     public void balloonSetItem(Player player, ItemStack itemStack) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         if(isBigHead()){
-            list.add(new Pair<>(EnumItemSlot.a, CraftItemStack.asNMSCopy(itemStack)));
+            list.add(new Pair<>(EquipmentSlot.MAINHAND, CraftItemStack.asNMSCopy(itemStack)));
         }else {
-            list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
+            list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
         }
-        connection.b(new PacketPlayOutEntityEquipment(balloon.ar(), list));
+        connection.send(new ClientboundSetEquipmentPacket(balloon.getId(), list));
     }
 
     @Override
     public void balloonNPC(Player player, Location location, ItemStack itemStack, boolean bigHead){
         removeBalloon(player);
         //balloon
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        EntityPlayer realPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ServerPlayer realPlayer = ((CraftPlayer)player).getHandle();
         balloonPosition = location.clone();
         Location balloonPos = location.clone();
         balloonPos.setX(balloonPos.getY()-1.3);
-        balloon.b(balloonPos.getX(), balloonPos.getY(), balloonPos.getZ(), balloonPos.getYaw(), balloonPos.getPitch());
+        balloon.absMoveTo(balloonPos.getX(), balloonPos.getY(), balloonPos.getZ(), balloonPos.getYaw(), balloonPos.getPitch());
 
-        leashed.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        leashed.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         this.bigHead = bigHead;
         if(isBigHead()){
-            balloon.d(new Vector3f(balloon.C().b(), 0, 0));
+            balloon.setHeadPose(new Rotations(balloon.getHeadPose().getX(), 0, 0));
         }
-        PacketPlayOutSpawnEntity balloonSpawnPacket = new PacketPlayOutSpawnEntity(balloon.ar(), balloon.cG(), balloonPos.getX(), balloonPos.getY(), balloonPos.getZ(), balloonPos.getPitch(), balloonPos.getYaw(), balloon.aq(), 0, balloon.dy(), balloon.cA());
-        PacketPlayOutSpawnEntity leashedSpawnPacket = new PacketPlayOutSpawnEntity(leashed.ar(), leashed.cG(), balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getPitch(), balloonPosition.getYaw(), leashed.aq(), 0, leashed.dy(), leashed.cA());
-        realPlayer.f.b(balloonSpawnPacket);
-        realPlayer.f.b(leashedSpawnPacket);
-        realPlayer.f.b(new PacketPlayOutEntityMetadata(balloon.ar(), balloon.au().c()));
-        realPlayer.f.b(new PacketPlayOutEntityMetadata(leashed.ar(), leashed.au().c()));
-        realPlayer.f.b(new PacketPlayOutAttachEntity(leashed, entityPlayer));
+        ClientboundAddEntityPacket balloonSpawnPacket = new ClientboundAddEntityPacket(balloon.getId(), balloon.getUUID(), balloonPos.getX(), balloonPos.getY(), balloonPos.getZ(), balloonPos.getPitch(), balloonPos.getYaw(), balloon.getType(), 0, balloon.getDeltaMovement(), balloon.getYRot());
+        ClientboundAddEntityPacket leashedSpawnPacket = new ClientboundAddEntityPacket(leashed.getId(), leashed.getUUID(), balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getPitch(), balloonPosition.getYaw(), leashed.getType(), 0, leashed.getDeltaMovement(), leashed.getYRot());
+        realPlayer.connection.send(balloonSpawnPacket);
+        realPlayer.connection.send(leashedSpawnPacket);
+        realPlayer.connection.send(new ClientboundSetEntityDataPacket(balloon.getId(), balloon.getEntityData().getNonDefaultValues()));
+        realPlayer.connection.send(new ClientboundSetEntityDataPacket(leashed.getId(), leashed.getEntityData().getNonDefaultValues()));
+        realPlayer.connection.send(new ClientboundSetEntityLinkPacket(leashed, entityPlayer));
         balloonSetItem(player, itemStack);
     }
 
     @Override
     public void equipNPC(Player player, ItemSlot itemSlot, ItemStack itemStack) {
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         switch (itemSlot){
             case MAIN_HAND:
-                list.add(new Pair<>(EnumItemSlot.a, CraftItemStack.asNMSCopy(itemStack)));
-                connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+                list.add(new Pair<>(EquipmentSlot.MAINHAND, CraftItemStack.asNMSCopy(itemStack)));
+                connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
                 break;
             case OFF_HAND:
-                list.add(new Pair<>(EnumItemSlot.b, CraftItemStack.asNMSCopy(itemStack)));
-                connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+                list.add(new Pair<>(EquipmentSlot.OFFHAND, CraftItemStack.asNMSCopy(itemStack)));
+                connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
                 break;
             case BOOTS:
-                list.add(new Pair<>(EnumItemSlot.c, CraftItemStack.asNMSCopy(itemStack)));
-                connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+                list.add(new Pair<>(EquipmentSlot.FEET, CraftItemStack.asNMSCopy(itemStack)));
+                connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
                 break;
             case LEGGINGS:
-                list.add(new Pair<>(EnumItemSlot.d, CraftItemStack.asNMSCopy(itemStack)));
-                connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+                list.add(new Pair<>(EquipmentSlot.LEGS, CraftItemStack.asNMSCopy(itemStack)));
+                connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
                 break;
             case CHESTPLATE:
-                list.add(new Pair<>(EnumItemSlot.e, CraftItemStack.asNMSCopy(itemStack)));
-                connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+                list.add(new Pair<>(EquipmentSlot.CHEST, CraftItemStack.asNMSCopy(itemStack)));
+                connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
                 break;
             case HELMET:
-                list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
-                connection.b(new PacketPlayOutEntityEquipment(entityPlayer.ar(), list));
+                list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
+                connection.send(new ClientboundSetEquipmentPacket(entityPlayer.getId(), list));
                 break;
         }
     }
@@ -240,27 +241,27 @@ public class NPCHandler extends NPC {
     @Override
     public void addPassenger(Player player) {
         if(entity == null) return;
-        EntityArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
-        EntityPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
-        PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
-            packetDataSerializer.c(entityPlayer.ar());
-            packetDataSerializer.a(new int[]{armorStand.ar()});
-            return PacketPlayOutMount.a.decode(packetDataSerializer);
+        ArmorStand armorStand = ((CraftArmorStand)this.armorStand).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)this.entity).getHandle();
+        ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+            packetDataSerializer.writeVarInt(entityPlayer.getId());
+            packetDataSerializer.writeVarIntArray(new int[]{armorStand.getId()});
+            return ClientboundSetPassengersPacket.STREAM_CODEC.decode(packetDataSerializer);
         });
-        p.f.b(packetPlayOutMount);
+        p.connection.send(packetPlayOutMount);
     }
 
     public void addPassenger(Player player, net.minecraft.world.entity.Entity entity1, net.minecraft.world.entity.Entity entity2) {
         if(entity1 == null) return;
         if(entity2 == null) return;
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
-        PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
-            packetDataSerializer.c(entity1.ar());
-            packetDataSerializer.a(new int[]{entity2.ar()});
-            return PacketPlayOutMount.a.decode(packetDataSerializer);
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
+        ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+            packetDataSerializer.writeVarInt(entity1.getId());
+            packetDataSerializer.writeVarIntArray(new int[]{entity2.getId()});
+            return ClientboundSetPassengersPacket.STREAM_CODEC.decode(packetDataSerializer);
         });
-        p.f.b(packetPlayOutMount);
+        p.connection.send(packetPlayOutMount);
     }
 
     public void animation(Player player){
@@ -268,20 +269,18 @@ public class NPCHandler extends NPC {
             animationBigHead(player);
             return;
         }
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
         //
         if(balloonPosition == null) return;
         if (!floatLoop) {
             y += 0.01;
             balloonPosition.add(0, 0.01, 0);
-            //standToLoc.setYaw(standToLoc.getYaw() - 3F);
             if (y > 0.10) {
                 floatLoop = true;
             }
         } else {
             y -= 0.01;
             balloonPosition.subtract(0, 0.01, 0);
-            //standToLoc.setYaw(standToLoc.getYaw() + 3F);
             if (y < (-0.11 + 0)) {
                 floatLoop = false;
                 rotate *= -1;
@@ -289,41 +288,37 @@ public class NPCHandler extends NPC {
         }
         if (!rotateLoop) {
             rot += 0.01;
-            balloon.a(new Vector3f(balloon.B().b() - 0.5f, balloon.B().c(), balloon.B().d() + rotate));
-            //armorStand.setHeadPose(armorStand.getHeadPose().add(0, 0, rotate).subtract(0.008, 0, 0));
+            balloon.setBodyPose(new Rotations(balloon.getBodyPose().getX() - 0.5f, balloon.getBodyPose().getY(), balloon.getBodyPose().getZ() + rotate));
             if (rot > 0.20) {
                 rotateLoop = true;
             }
         } else {
             rot -= 0.01;
-            balloon.a(new Vector3f(balloon.B().b() + 0.5f, balloon.B().c(), balloon.B().d() + rotate));
-            //armorStand.setHeadPose(armorStand.getHeadPose().add(0.008, 0, rotate));//.subtract(0.006, 0, 0));
+            balloon.setBodyPose(new Rotations(balloon.getBodyPose().getX() + 0.5f, balloon.getBodyPose().getY(), balloon.getBodyPose().getZ() + rotate));
             if (rot < -0.20) {
                 rotateLoop = false;
             }
         }
-        leashed.a(balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
-        balloon.a(balloonPosition.getX(), balloonPosition.getY() - 1.3, balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
-        p.f.b(new PacketPlayOutEntityMetadata(balloon.ar(), balloon.au().c()));
-        p.f.b(new PacketPlayOutEntityTeleport(leashed.ar(), PositionMoveRotation.a(leashed), Relative.j,  false));
-        p.f.b(new PacketPlayOutEntityTeleport(balloon.ar(), PositionMoveRotation.a(balloon), Relative.j,  false));
+        leashed.absMoveTo(balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
+        balloon.absMoveTo(balloonPosition.getX(), balloonPosition.getY() - 1.3, balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
+        p.connection.send(new ClientboundSetEntityDataPacket(balloon.getId(), balloon.getEntityData().getNonDefaultValues()));
+        p.connection.send(new ClientboundTeleportEntityPacket(leashed.getId(), PositionMoveRotation.of(leashed), java.util.Set.of(), false));
+        p.connection.send(new ClientboundTeleportEntityPacket(balloon.getId(), PositionMoveRotation.of(balloon), java.util.Set.of(), false));
     }
 
     public void animationBigHead(Player player){
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
         //
         if(balloonPosition == null) return;
         if (!floatLoop) {
             y += 0.01;
             balloonPosition.add(0, 0.01, 0);
-            //standToLoc.setYaw(standToLoc.getYaw() - 3F);
             if (y > 0.10) {
                 floatLoop = true;
             }
         } else {
             y -= 0.01;
             balloonPosition.subtract(0, 0.01, 0);
-            //standToLoc.setYaw(standToLoc.getYaw() + 3F);
             if (y < (-0.11 + 0)) {
                 floatLoop = false;
                 rotate *= -1;
@@ -331,24 +326,22 @@ public class NPCHandler extends NPC {
         }
         if (!rotateLoop) {
             rot += 0.01;
-            balloon.d(new Vector3f(balloon.C().b() - 0.5f, balloon.C().c(), balloon.C().d() + rotate));
-            //armorStand.setHeadPose(armorStand.getHeadPose().add(0, 0, rotate).subtract(0.008, 0, 0));
+            balloon.setHeadPose(new Rotations(balloon.getHeadPose().getX() - 0.5f, balloon.getHeadPose().getY(), balloon.getHeadPose().getZ() + rotate));
             if (rot > 0.20) {
                 rotateLoop = true;
             }
         } else {
             rot -= 0.01;
-            balloon.d(new Vector3f(balloon.C().b() + 0.5f, balloon.C().c(), balloon.C().d() + rotate));
-            //armorStand.setHeadPose(armorStand.getHeadPose().add(0.008, 0, rotate));//.subtract(0.006, 0, 0));
+            balloon.setHeadPose(new Rotations(balloon.getHeadPose().getX() + 0.5f, balloon.getHeadPose().getY(), balloon.getHeadPose().getZ() + rotate));
             if (rot < -0.20) {
                 rotateLoop = false;
             }
         }
-        leashed.a(balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
-        balloon.a(balloonPosition.getX(), balloonPosition.getY() - 1.3, balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
-        p.f.b(new PacketPlayOutEntityMetadata(balloon.ar(), balloon.au().c()));
-        p.f.b(new PacketPlayOutEntityTeleport(leashed.ar(), PositionMoveRotation.a(leashed), Relative.j,  false));
-        p.f.b(new PacketPlayOutEntityTeleport(balloon.ar(), PositionMoveRotation.a(balloon), Relative.j,  false));
+        leashed.absMoveTo(balloonPosition.getX(), balloonPosition.getY(), balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
+        balloon.absMoveTo(balloonPosition.getX(), balloonPosition.getY() - 1.3, balloonPosition.getZ(), balloonPosition.getYaw(), balloonPosition.getPitch());
+        p.connection.send(new ClientboundSetEntityDataPacket(balloon.getId(), balloon.getEntityData().getNonDefaultValues()));
+        p.connection.send(new ClientboundTeleportEntityPacket(leashed.getId(), PositionMoveRotation.of(leashed), java.util.Set.of(), false));
+        p.connection.send(new ClientboundTeleportEntityPacket(balloon.getId(), PositionMoveRotation.of(balloon), java.util.Set.of(), false));
     }
 
     @Override
@@ -356,8 +349,8 @@ public class NPCHandler extends NPC {
         return npcs.get(player.getUniqueId());
     }
 
-    private <T> T createDataSerializer(UnsafeFunction<PacketDataSerializer, T> callback) {
-        PacketDataSerializer data = new PacketDataSerializer(Unpooled.buffer());
+    private <T> T createDataSerializer(UnsafeFunction<FriendlyByteBuf, T> callback) {
+        FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
         T result = null;
         try {
             result = callback.apply(data);
@@ -375,7 +368,7 @@ public class NPCHandler extends NPC {
     }
 
     public String[] getFromPlayer(Player playerBukkit) throws NoSuchElementException{
-        EntityPlayer playerNMS = ((CraftPlayer) playerBukkit).getHandle();
+        ServerPlayer playerNMS = ((CraftPlayer) playerBukkit).getHandle();
         GameProfile profile = playerNMS.getBukkitEntity().getProfile();
 
         Property property = profile.getProperties().get("textures").iterator().next();

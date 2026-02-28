@@ -181,7 +181,7 @@ public class Token {
             itemMeta.setDisplayName(display);
             itemMeta.setLore(lore);
             if(glow){
-                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                itemMeta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
             if(hide_attributes){

@@ -4,7 +4,7 @@ import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.cache.PlayerData;
 import com.francobm.magicosmetics.cache.cosmetics.backpacks.Bag;
 import com.francobm.magicosmetics.cache.cosmetics.balloons.Balloon;
-import com.francobm.magicosmetics.nms.v1_18_R2.VersionHandler;
+import com.francobm.magicosmetics.nms.version.Version;
 import dev.lone.itemsadder.api.CustomEntity;
 import dev.lone.itemsadder.api.CustomPlayer;
 import dev.lone.itemsadder.api.CustomStack;
@@ -72,7 +72,7 @@ public class ItemsAdder implements ResourcePlugin {
             plugin.getLogger().warning("Player " + player.getName() + " is not spawned");
             return;
         }
-        ArmorStand armorStand = ((VersionHandler)plugin.getVersion()).createArmor(player);
+        ArmorStand armorStand = plugin.getVersion().spawnArmorStand(player.getLocation());
         ((Balloon)playerData.getBalloon()).setLeashedHolder(armorStand);
         CustomEntity.Bone bone = customPlayer.getBone("pbody_2");
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, (task) -> {

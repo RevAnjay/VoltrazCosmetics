@@ -3,14 +3,14 @@ package com.francobm.magicosmetics.nms.v1_21_R3.cache;
 import com.francobm.magicosmetics.nms.bag.EntityBag;
 import com.mojang.datafixers.util.Pair;
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.PacketDataSerializer;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EnumItemSlot;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_21_R3.CraftWorld;
@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EntityBagHandler extends EntityBag {
-    private final EntityArmorStand armorStand;
+    private final ArmorStand armorStand;
     private final double distance;
 
     public EntityBagHandler(Entity entity, double distance) {
@@ -36,13 +36,13 @@ public class EntityBagHandler extends EntityBag {
         this.distance = distance;
         this.entity = entity;
         entityBags.put(uuid, this);
-        WorldServer world = ((CraftWorld) entity.getWorld()).getHandle();
+        ServerLevel world = ((CraftWorld) entity.getWorld()).getHandle();
 
-        armorStand = new EntityArmorStand(EntityTypes.f, world);
-        armorStand.b(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ(), entity.getLocation().getYaw(), 0);
-        armorStand.k(true); //Invisible
-        armorStand.n(true); //Invulnerable
-        armorStand.v(true); //Marker
+        armorStand = new ArmorStand(EntityType.ARMOR_STAND, world);
+        armorStand.absMoveTo(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ(), entity.getLocation().getYaw(), 0);
+        armorStand.setInvisible(true);
+        armorStand.setInvulnerable(true);
+        armorStand.setMarker(true);
 
     }
 
@@ -60,16 +60,15 @@ public class EntityBagHandler extends EntityBag {
         }
         if(!getEntity().getWorld().equals(player.getWorld())) return;
         if(getEntity().getLocation().distanceSquared(player.getLocation()) > distance) return;
-        armorStand.n(true); //invulnerable true
-        armorStand.k(true); //Invisible true
-        armorStand.v(true); //Marker
+        armorStand.setInvulnerable(true);
+        armorStand.setInvisible(true);
+        armorStand.setMarker(true);
         Location location = getEntity().getLocation();
-        armorStand.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), 0);
+        armorStand.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), 0);
 
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        entityPlayer.f.b(new PacketPlayOutSpawnEntity(armorStand, 0, CraftLocation.toBlockPosition(location)));
-        //client settings
-        entityPlayer.f.b(new PacketPlayOutEntityMetadata(armorStand.ar(), armorStand.au().c()));
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        entityPlayer.connection.send(new ClientboundAddEntityPacket(armorStand, 0, CraftLocation.toBlockPosition(location)));
+        entityPlayer.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
         addPassenger(player, getEntity(), armorStand.getBukkitEntity());
         players.add(player.getUniqueId());
     }
@@ -102,14 +101,14 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+            ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
             net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
-            PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
-                packetDataSerializer.c(e.ar());
-                packetDataSerializer.a(new int[]{armorStand.ar()});
-                return PacketPlayOutMount.a.decode(packetDataSerializer);
+            ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+                packetDataSerializer.writeVarInt(e.getId());
+                packetDataSerializer.writeVarIntArray(new int[]{armorStand.getId()});
+                return ClientboundSetPassengersPacket.STREAM_CODEC.decode(packetDataSerializer);
             });
-            entityPlayer.f.b(packetPlayOutMount);
+            entityPlayer.connection.send(packetPlayOutMount);
         }
     }
 
@@ -121,37 +120,37 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+            ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
             net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
             net.minecraft.world.entity.Entity pass = ((CraftEntity)passenger).getHandle();
 
-            PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
-                packetDataSerializer.d(e.ar());
-                packetDataSerializer.a(new int[]{pass.ar()});
-                return PacketPlayOutMount.a.decode(packetDataSerializer);
+            ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+                packetDataSerializer.writeVarInt(e.getId());
+                packetDataSerializer.writeVarIntArray(new int[]{pass.getId()});
+                return ClientboundSetPassengersPacket.STREAM_CODEC.decode(packetDataSerializer);
             });
-            entityPlayer.f.b(packetPlayOutMount);
+            entityPlayer.connection.send(packetPlayOutMount);
         }
     }
 
     @Override
     public void addPassenger(Player player, Entity entity, Entity passenger) {
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
         net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
         net.minecraft.world.entity.Entity pass = ((CraftEntity)passenger).getHandle();
 
-        PacketPlayOutMount packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
-            packetDataSerializer.d(e.ar());
-            packetDataSerializer.a(new int[]{pass.ar()});
-            return PacketPlayOutMount.a.decode(packetDataSerializer);
+        ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
+            packetDataSerializer.writeVarInt(e.getId());
+            packetDataSerializer.writeVarIntArray(new int[]{pass.getId()});
+            return ClientboundSetPassengersPacket.STREAM_CODEC.decode(packetDataSerializer);
         });
-        entityPlayer.f.b(packetPlayOutMount);
+        entityPlayer.connection.send(packetPlayOutMount);
     }
 
     @Override
     public void remove(Player player) {
-        PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-        connection.b(new PacketPlayOutEntityDestroy(armorStand.ar()));
+        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        connection.send(new ClientboundRemoveEntitiesPacket(armorStand.getId()));
         players.remove(player.getUniqueId());
     }
 
@@ -163,10 +162,10 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            PlayerConnection connection = ((CraftPlayer)player).getHandle().f;
-            ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-            list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
-            connection.b(new PacketPlayOutEntityEquipment(armorStand.ar(), list));
+            ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+            ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+            list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
+            connection.send(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
         }
     }
 
@@ -179,14 +178,14 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            PlayerConnection connection = ((CraftPlayer) player).getHandle().f;
-            connection.b(new PacketPlayOutEntityHeadRotation(armorStand, (byte) (yaw * 256 / 360)));
-            connection.b(new PacketPlayOutEntity.PacketPlayOutEntityLook(armorStand.ar(), (byte) (yaw * 256 / 360), /*(byte) (pitch * 256 / 360)*/(byte)0, true));
+            ServerGamePacketListenerImpl connection = ((CraftPlayer) player).getHandle().connection;
+            connection.send(new ClientboundRotateHeadPacket(armorStand, (byte) (yaw * 256 / 360)));
+            connection.send(new ClientboundMoveEntityPacket.Rot(armorStand.getId(), (byte) (yaw * 256 / 360), (byte)0, true));
         }
     }
 
-    private <T> T createDataSerializer(UnsafeFunction<PacketDataSerializer, T> callback) {
-        PacketDataSerializer data = new PacketDataSerializer(Unpooled.buffer());
+    private <T> T createDataSerializer(UnsafeFunction<FriendlyByteBuf, T> callback) {
+        FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
         T result = null;
         try {
             result = callback.apply(data);

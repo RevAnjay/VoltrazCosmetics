@@ -1,7 +1,7 @@
 package com.francobm.magicosmetics.nms.v1_21_R2.cache;
 
 import com.francobm.magicosmetics.nms.IRangeManager;
-import net.minecraft.server.level.PlayerChunkMap;
+import net.minecraft.server.level.ChunkMap;
 import org.bukkit.craftbukkit.v1_21_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
@@ -10,27 +10,27 @@ import java.util.Set;
 
 public class RangeManager implements IRangeManager {
 
-    private final PlayerChunkMap.EntityTracker tracked;
+    private final ChunkMap.TrackedEntity tracked;
 
-    public RangeManager(PlayerChunkMap.EntityTracker tracked) {
+    public RangeManager(ChunkMap.TrackedEntity tracked) {
         this.tracked = tracked;
     }
 
     @Override
     public void addPlayer(Player player) {
-        tracked.f.add(((CraftPlayer) player).getHandle().f);
+        tracked.seenBy.add(((CraftPlayer) player).getHandle().connection);
     }
 
     @Override
     public void removePlayer(Player player) {
-        tracked.f.remove(((CraftPlayer) player).getHandle().f);
+        tracked.seenBy.remove(((CraftPlayer) player).getHandle().connection);
     }
 
     @Override
     public Set<Player> getPlayerInRange() {
         Set<Player> list = new HashSet<>();
         if(tracked == null) return list;
-        tracked.f.forEach(serverPlayerConnection -> list.add(serverPlayerConnection.o().getBukkitEntity()));
+        tracked.seenBy.forEach(serverServerGamePacketListenerImpl -> list.add(serverServerGamePacketListenerImpl.getPlayer().getBukkitEntity()));
         return list;
     }
 }

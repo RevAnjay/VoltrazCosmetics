@@ -153,7 +153,7 @@ public class Color {
                 itemMeta.setDisplayName(displayName);
                 itemMeta.setLore(lore);
                 if(glow){
-                    primaryItem.addUnsafeEnchantment(Enchantment.DURABILITY, 1);
+                    primaryItem.addUnsafeEnchantment(Enchantment.UNBREAKING, 1);
                     itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
                 if(hide_attributes) {

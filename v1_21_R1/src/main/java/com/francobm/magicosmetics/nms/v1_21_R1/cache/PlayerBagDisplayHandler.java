@@ -20,7 +20,6 @@ import net.minecraft.world.item.ItemDisplayContext;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.util.CraftLocation;
@@ -57,15 +56,15 @@ public class PlayerBagDisplayHandler extends PlayerBag {
         entityPlayer = ((CraftPlayer) player).getHandle();
         ServerLevel world = ((CraftWorld) player.getWorld()).getHandle();
 
-        backPack = new Display.ItemDisplay(EntityType.ah, world);
-        backpackId = backPack.an();
-        backPack.a(ItemDisplayContext.f);
-        backPack.w(10);
-        backPack.x(10);
-        backPack.a_(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
-        backPack.b(0);
-        backPack.c(0);
-        backPack.ar().a(Display.s, 1);
+        backPack = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, world);
+        backpackId = backPack.getId();
+        backPack.setItemTransform(ItemDisplayContext.HEAD);
+        backPack.setTransformationInterpolationDuration(10);
+        backPack.getEntityData().set(Display.DATA_POS_ROT_INTERPOLATION_DURATION_ID, 10);
+        backPack.setPosRaw(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
+        backPack.setViewRange(0);
+        backPack.setShadowRadius(0);
+        backPack.setBillboardConstraints(Display.BillboardConstraints.VERTICAL);
     }
 
     @Override
@@ -78,7 +77,7 @@ public class PlayerBagDisplayHandler extends PlayerBag {
             return;
         }
         Location location = owner.getLocation();
-        backPack.a_(location.getX(), location.getY(), location.getZ());
+        backPack.setPosRaw(location.getX(), location.getY(), location.getZ());
 
         sendPackets(player, getBackPackSpawn(backPackItem, height));
     }
@@ -89,7 +88,7 @@ public class PlayerBagDisplayHandler extends PlayerBag {
         if(owner == null) return;
 
         Location location = owner.getLocation();
-        backPack.a_(location.getX(), location.getY(), location.getZ());
+        backPack.setPosRaw(location.getX(), location.getY(), location.getZ());
 
         sendPackets(player, getBackPackSpawn(backPackItemForMe == null ? backPackItem : backPackItemForMe, height));
     }
@@ -121,7 +120,7 @@ public class PlayerBagDisplayHandler extends PlayerBag {
 
     @Override
     public void addPassenger(boolean exception) {
-        List<Packet<?>> backPack = getBackPackMountPacket(lendEntityId == -1 ? getPlayer().getEntityId() : lendEntityId, this.backPack.an());
+        List<Packet<?>> backPack = getBackPackMountPacket(lendEntityId == -1 ? getPlayer().getEntityId() : lendEntityId, this.backPack.getId());
         for(Player player : getPlayersInRange()){
             if(exception && player.getUniqueId().equals(this.uuid)) continue;
             sendPackets(player, backPack);
@@ -139,32 +138,31 @@ public class PlayerBagDisplayHandler extends PlayerBag {
     }
 
     private List<Packet<?>> getBackPackSpawn(ItemStack backpackItem, float height) {
-        //backPack.a(new Transformation(new Vector3f(0, height, -0.3f), new Quaternionf(), new Vector3f(.6f, .6f, .6f), new Quaternionf()));
-        backPack.a(new Transformation(new Vector3f(0, height, -0.3f), new Quaternionf(), new Vector3f(), new Quaternionf()));
-        backPack.a(CraftItemStack.asNMSCopy(backpackItem));
+        backPack.setTransformation(new Transformation(new Vector3f(0, height, -0.3f), new Quaternionf(), new Vector3f(), new Quaternionf()));
+        backPack.setItemStack(CraftItemStack.asNMSCopy(backpackItem));
         ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(backPack, 0, CraftLocation.toBlockPosition(entityPlayer.getBukkitEntity().getLocation()));
-        ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(backPack.an(), backPack.ar().c());
+        ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(backPack.getId(), backPack.getEntityData().getNonDefaultValues());
         ClientboundSetPassengersPacket mountEntity = new ClientboundSetPassengersPacket(entityPlayer);
         return Arrays.asList(spawnEntity, entityMetadata, mountEntity);
     }
 
     private List<Packet<?>> getBackPackDismount() {
-        ClientboundRemoveEntitiesPacket backPackDestroy = new ClientboundRemoveEntitiesPacket(backPack.an());
+        ClientboundRemoveEntitiesPacket backPackDestroy = new ClientboundRemoveEntitiesPacket(backPack.getId());
         return Collections.singletonList(backPackDestroy);
     }
 
     private List<Packet<?>> getBackPackMountPacket(int entity, int passenger) {
         ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
-            packetDataSerializer.c(entity);
-            packetDataSerializer.a(new int[]{passenger});
-            return ClientboundSetPassengersPacket.a.decode(packetDataSerializer);
+            packetDataSerializer.writeVarInt(entity);
+            packetDataSerializer.writeVarIntArray(new int[]{passenger});
+            return ClientboundSetPassengersPacket.STREAM_CODEC.decode(packetDataSerializer);
         });
         return Collections.singletonList(packetPlayOutMount);
     }
 
     private List<Packet<?>> getBackPackHelmetPacket(ItemStack itemStack) {
-        backPack.a(CraftItemStack.asNMSCopy(itemStack));
-        return Collections.singletonList(new ClientboundSetEntityDataPacket(backPack.an(), backPack.ar().c()));
+        backPack.setItemStack(CraftItemStack.asNMSCopy(itemStack));
+        return Collections.singletonList(new ClientboundSetEntityDataPacket(backPack.getId(), backPack.getEntityData().getNonDefaultValues()));
     }
 
     @Override
@@ -210,21 +208,14 @@ public class PlayerBagDisplayHandler extends PlayerBag {
     private List<Packet<?>> getBackPackRotationPackets(float yaw) {
         Player owner = getPlayer();
         if(owner == null) return null;
-        /*
-        float rotationY = (float) Math.toRadians(yaw);
-        backPack.a(new Transformation(new Vector3f(0,  owner.getUniqueId().equals(player.getUniqueId()) ? height : 0, -0.3f), new Quaternionf().rotateY(-rotationY), new Vector3f(.6f, .6f, .6f), new Quaternionf()));
-        ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(backPack.an(), backPack.ar().c());
-        return Collections.singletonList(entityMetadata);
-        */
-        //float rotationY = Location.normalizeYaw(entityPlayer.dF());
         double rotationY = yaw;
-        PacketPlayOutEntityHeadRotation packetPlayOutEntityHeadRotation = new PacketPlayOutEntityHeadRotation(backPack, (byte) (rotationY * 256 / 360));
-        PacketPlayOutEntity.PacketPlayOutEntityLook packetPlayOutEntityLook = new PacketPlayOutEntity.PacketPlayOutEntityLook(backPack.an(), (byte) (rotationY * 256 / 360), (byte)0, false);
+        ClientboundRotateHeadPacket packetPlayOutEntityHeadRotation = new ClientboundRotateHeadPacket(backPack, (byte) (rotationY * 256 / 360));
+        ClientboundMoveEntityPacket.Rot packetPlayOutEntityLook = new ClientboundMoveEntityPacket.Rot(backPack.getId(), (byte) (rotationY * 256 / 360), (byte)0, false);
         return Arrays.asList(packetPlayOutEntityLook, packetPlayOutEntityHeadRotation);
     }
 
     private void sendPackets(Player player, List<Packet<?>> packets) {
-        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().c);
+        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().connection);
         if(pipeline == null) return;
         for(Packet<?> packet : packets)
             pipeline.write(packet);
@@ -240,19 +231,19 @@ public class PlayerBagDisplayHandler extends PlayerBag {
                 Class<?> clazz = Class.forName(className);
                 Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
-                Object[] parameters = { playerConnection.f };
+                Object[] parameters = { playerConnection.player };
                 Connection result = (Connection) method.invoke(null, parameters);
-                return result.n.pipeline();
+                return result.channel.pipeline();
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                      IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }
         try {
-            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
             privateConnection.setAccessible(true);
             Connection networkManager = (Connection) privateConnection.get(playerConnection);
-            return networkManager.n.pipeline();
+            return networkManager.channel.pipeline();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             Bukkit.getLogger().severe("Error: Channel Pipeline not found");
             return null;

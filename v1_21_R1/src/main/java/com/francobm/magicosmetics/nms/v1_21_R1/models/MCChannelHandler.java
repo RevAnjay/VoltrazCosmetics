@@ -46,29 +46,29 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if(msg instanceof PacketPlayOutSetSlot) {
-            PacketPlayOutSetSlot packetPlayOutSetSlot = (PacketPlayOutSetSlot) msg;
-            if(packetPlayOutSetSlot.b() == 0)
-                CallUpdateInvEvent(packetPlayOutSetSlot.e(), packetPlayOutSetSlot.f());
+        if(msg instanceof ClientboundContainerSetSlotPacket) {
+            ClientboundContainerSetSlotPacket packetPlayOutSetSlot = (ClientboundContainerSetSlotPacket) msg;
+            if(packetPlayOutSetSlot.getContainerId() == 0)
+                CallUpdateInvEvent(packetPlayOutSetSlot.getSlot(), packetPlayOutSetSlot.getItem());
         }else if(msg instanceof ClientboundBundlePacket) {
             ClientboundBundlePacket packet = (ClientboundBundlePacket) msg;
-            for(Packet<?> subPacket : packet.b()){
+            for(Packet<?> subPacket : packet.subPackets()){
                 if(subPacket instanceof ClientboundAddEntityPacket) {
                     ClientboundAddEntityPacket otherPacket = (ClientboundAddEntityPacket) subPacket;
-                    handleEntitySpawn(otherPacket.b());
+                    handleEntitySpawn(otherPacket.getId());
                 }else if(subPacket instanceof ClientboundRemoveEntitiesPacket) {
                     ClientboundRemoveEntitiesPacket otherPacket = (ClientboundRemoveEntitiesPacket) subPacket;
-                    for(int id : otherPacket.b()){
+                    for(int id : otherPacket.getEntityIds()){
                         handleEntityDespawn(id);
                     }
                 }
             }
         }else if(msg instanceof ClientboundAddEntityPacket) {
             ClientboundAddEntityPacket otherPacket = (ClientboundAddEntityPacket) msg;
-            handleEntitySpawn(otherPacket.b());
+            handleEntitySpawn(otherPacket.getId());
         }else if(msg instanceof ClientboundRemoveEntitiesPacket) {
             ClientboundRemoveEntitiesPacket otherPacket = (ClientboundRemoveEntitiesPacket) msg;
-            for(int id : otherPacket.b()){
+            for(int id : otherPacket.getEntityIds()){
                 handleEntityDespawn(id);
             }
         }else if(msg instanceof ClientboundSetPassengersPacket) {
@@ -80,7 +80,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if(msg instanceof PacketPlayInArmAnimation){
+        if(msg instanceof ServerboundSwingPacket){
             if(checkInZone()){
                 openMenu();
             }
@@ -124,9 +124,9 @@ public class MCChannelHandler extends ChannelDuplexHandler {
 
 
     private ClientboundSetPassengersPacket handleEntityMount(ClientboundSetPassengersPacket packetPlayOutMount) {
-        int id = packetPlayOutMount.e();
-        int[] ids =packetPlayOutMount.b();
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.A(), id);
+        int id = packetPlayOutMount.getVehicle();
+        int[] ids = packetPlayOutMount.getPassengers();
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
         if(!(entity instanceof Player)) return packetPlayOutMount;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -141,13 +141,13 @@ public class MCChannelHandler extends ChannelDuplexHandler {
             newIds[i + 1] = ids[i];
         }
         FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
-        data.c(id);
-        data.a(newIds);
-        return ClientboundSetPassengersPacket.a.decode(data);
+        data.writeVarInt(id);
+        data.writeVarIntArray(newIds);
+        return ClientboundSetPassengersPacket.STREAM_CODEC.decode(data);
     }
 
     private void handleEntitySpawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.A(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -157,7 +157,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private void handleEntityDespawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.A(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -167,13 +167,13 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     protected org.bukkit.entity.Entity getEntityAsync(ServerLevel world, int id) {
-        net.minecraft.world.entity.Entity entity = getEntityGetter(world).a(id);
+        net.minecraft.world.entity.Entity entity = getEntityGetter(world).get(id);
         return entity == null ? null : entity.getBukkitEntity();
     }
 
     public static LevelEntityGetter<Entity> getEntityGetter(ServerLevel level) {
         if(entityGetter == null)
-            return level.N.d();
+            return level.getEntities();
         try {
             return (LevelEntityGetter<net.minecraft.world.entity.Entity>) entityGetter.invoke(level);
         }catch (Throwable ignored) {

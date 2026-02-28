@@ -13,22 +13,23 @@ import com.francobm.magicosmetics.nms.v1_21_R3.models.PacketReaderHandler;
 import com.francobm.magicosmetics.nms.version.Version;
 import com.google.common.collect.Lists;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.Optionull;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.chat.RemoteChatSession;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.syncher.DataWatcher;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.PlayerChunkMap;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.animal.EntityPufferFish;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
-import net.minecraft.world.inventory.Containers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.animal.Pufferfish;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.level.EnumGamemode;
+import net.minecraft.world.level.GameType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -41,7 +42,6 @@ import org.bukkit.craftbukkit.v1_21_R3.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.v1_21_R3.util.CraftChatMessage;
 import org.bukkit.craftbukkit.v1_21_R3.util.CraftLocation;
 import org.bukkit.entity.*;
-import org.bukkit.entity.Entity;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -64,17 +64,17 @@ public class VersionHandler extends Version {
     @Override
     public void setSpectator(Player player) {
         player.setGameMode(GameMode.SPECTATOR);
-        EntityPlayer p = ((CraftPlayer)player).getHandle();
-        ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(Enum.valueOf(ClientboundPlayerInfoUpdatePacket.a.class, "UPDATE_GAME_MODE"), p);
+        ServerPlayer p = ((CraftPlayer)player).getHandle();
+        ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, p);
         try {
-            Field packetField = packet.getClass().getDeclaredField("c");
+            Field packetField = packet.getClass().getDeclaredField("entries");
             packetField.setAccessible(true);
-            ArrayList<ClientboundPlayerInfoUpdatePacket.b> list = Lists.newArrayList();
-            list.add(new ClientboundPlayerInfoUpdatePacket.b(player.getUniqueId(), p.getBukkitEntity().getProfile(), false, 0, EnumGamemode.b, p.O(), true, 0, Optionull.a(p.ad(), RemoteChatSession::a)));
+            ArrayList<ClientboundPlayerInfoUpdatePacket.Entry> list = Lists.newArrayList();
+            list.add(new ClientboundPlayerInfoUpdatePacket.Entry(player.getUniqueId(), p.getBukkitEntity().getProfile(),false, 0, GameType.ADVENTURE, p.getTabListDisplayName(), true, 0, null));
             packetField.set(packet, list);
-            p.f.b(packet);
-            PacketPlayOutGameStateChange packetPlayOutGameStateChange = new PacketPlayOutGameStateChange(PacketPlayOutGameStateChange.e, 3f);
-            p.f.b(packetPlayOutGameStateChange);
+            p.connection.send(packet);
+            ClientboundGameEventPacket gameEventPacket = new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, 3f);
+            p.connection.send(gameEventPacket);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -137,76 +137,76 @@ public class VersionHandler extends Version {
     }
 
     @Override
-    public void equip(LivingEntity livingEntity, ItemSlot itemSlot, ItemStack itemStack) {
-        ArrayList<Pair<EnumItemSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
+    public void equip(org.bukkit.entity.LivingEntity livingEntity, ItemSlot itemSlot, ItemStack itemStack) {
+        ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         switch (itemSlot){
             case MAIN_HAND:
-                list.add(new Pair<>(EnumItemSlot.a, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.MAINHAND, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case OFF_HAND:
-                list.add(new Pair<>(EnumItemSlot.b, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.OFFHAND, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case BOOTS:
-                list.add(new Pair<>(EnumItemSlot.c, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.FEET, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case LEGGINGS:
-                list.add(new Pair<>(EnumItemSlot.d, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.LEGS, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case CHESTPLATE:
-                list.add(new Pair<>(EnumItemSlot.e, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.CHEST, CraftItemStack.asNMSCopy(itemStack)));
                 break;
             case HELMET:
-                list.add(new Pair<>(EnumItemSlot.f, CraftItemStack.asNMSCopy(itemStack)));
+                list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
                 break;
         }
         for(Player p : Bukkit.getOnlinePlayers()){
-            PlayerConnection connection = ((CraftPlayer)p).getHandle().f;
-            connection.b(new PacketPlayOutEntityEquipment(livingEntity.getEntityId(), list));
+            ServerGamePacketListenerImpl connection = ((CraftPlayer)p).getHandle().connection;
+            connection.send(new ClientboundSetEquipmentPacket(livingEntity.getEntityId(), list));
         }
     }
 
     @Override
     public void updateTitle(Player player, String title) {
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
         if(player.getOpenInventory().getTopInventory().getType() != InventoryType.CHEST) return;
-        PacketPlayOutOpenWindow packet = null;
+        ClientboundOpenScreenPacket packet = null;
         switch (player.getOpenInventory().getTopInventory().getSize()/9){
             case 1:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.l, Containers.a, CraftChatMessage.fromStringOrNull(title));
+                packet = new ClientboundOpenScreenPacket(entityPlayer.containerMenu.containerId, MenuType.GENERIC_9x1, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 2:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.l, Containers.b, CraftChatMessage.fromStringOrNull(title));
+                packet = new ClientboundOpenScreenPacket(entityPlayer.containerMenu.containerId, MenuType.GENERIC_9x2, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 3:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.l, Containers.c, CraftChatMessage.fromStringOrNull(title));
+                packet = new ClientboundOpenScreenPacket(entityPlayer.containerMenu.containerId, MenuType.GENERIC_9x3, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 4:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.l, Containers.d, CraftChatMessage.fromStringOrNull(title));
+                packet = new ClientboundOpenScreenPacket(entityPlayer.containerMenu.containerId, MenuType.GENERIC_9x4, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 5:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.l, Containers.e, CraftChatMessage.fromStringOrNull(title));
+                packet = new ClientboundOpenScreenPacket(entityPlayer.containerMenu.containerId, MenuType.GENERIC_9x5, CraftChatMessage.fromStringOrNull(title));
                 break;
             case 6:
-                packet = new PacketPlayOutOpenWindow(entityPlayer.cd.l, Containers.f, CraftChatMessage.fromStringOrNull(title));
+                packet = new ClientboundOpenScreenPacket(entityPlayer.containerMenu.containerId, MenuType.GENERIC_9x6, CraftChatMessage.fromStringOrNull(title));
                 break;
         }
         if(packet == null) return;
-        entityPlayer.f.b(packet);
-        entityPlayer.cd.b();
+        entityPlayer.connection.send(packet);
+        entityPlayer.containerMenu.sendAllDataToRemote();
     }
 
     @Override
     public void setCamera(Player player, Entity entity) {
         net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
-        EntityPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        entityPlayer.f.b(new PacketPlayOutCamera(e));
+        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        entityPlayer.connection.send(new ClientboundSetCameraPacket(e));
     }
 
     @Override
     public ItemStack setNBTCosmetic(ItemStack itemStack, String key) {
         if(itemStack == null) return null;
         net.minecraft.world.item.ItemStack itemCosmetic = CraftItemStack.asNMSCopy(itemStack);
-        CustomData.a(DataComponents.b, itemCosmetic, nbtTagCompound -> nbtTagCompound.a("magic_cosmetic", key));
+        CustomData.update(DataComponents.CUSTOM_DATA, itemCosmetic, nbtTagCompound -> nbtTagCompound.putString("magic_cosmetic", key));
         return CraftItemStack.asBukkitCopy(itemCosmetic);
     }
 
@@ -214,123 +214,123 @@ public class VersionHandler extends Version {
     public String isNBTCosmetic(ItemStack itemStack) {
         if(itemStack == null) return null;
         net.minecraft.world.item.ItemStack itemCosmetic = CraftItemStack.asNMSCopy(itemStack);
-        if(!itemCosmetic.b(DataComponents.b)) return "";
-        CustomData customData = itemCosmetic.a(DataComponents.b);
-        return customData.d().l("magic_cosmetic");
+        if(!itemCosmetic.has(DataComponents.CUSTOM_DATA)) return "";
+        CustomData customData = itemCosmetic.get(DataComponents.CUSTOM_DATA);
+        return customData.copyTag().getString("magic_cosmetic");
     }
 
     public PufferFish spawnFakePuffer(Location location) {
-        EntityPufferFish entityPufferFish = new EntityPufferFish(EntityTypes.aW, ((CraftWorld)location.getWorld()).getHandle());
-        entityPufferFish.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        Pufferfish entityPufferFish = new Pufferfish(EntityType.PUFFERFISH, ((CraftWorld)location.getWorld()).getHandle());
+        entityPufferFish.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (PufferFish) entityPufferFish.getBukkitEntity();
     }
 
     @Override
-    public ArmorStand spawnArmorStand(Location location) {
-        EntityArmorStand entityPufferFish = new EntityArmorStand(EntityTypes.f, ((CraftWorld)location.getWorld()).getHandle());
-        entityPufferFish.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
-        return (ArmorStand) entityPufferFish.getBukkitEntity();
+    public org.bukkit.entity.ArmorStand spawnArmorStand(Location location) {
+        ArmorStand armorStand = new ArmorStand(EntityType.ARMOR_STAND, ((CraftWorld)location.getWorld()).getHandle());
+        armorStand.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        return (org.bukkit.entity.ArmorStand) armorStand.getBukkitEntity();
     }
 
-    public void showEntity(LivingEntity entity, Player ...viewers) {
-        EntityLiving entityClient = ((CraftLivingEntity) entity).getHandle();
-        entityClient.k(true);
-        DataWatcher dataWatcher = entityClient.au();
-        PacketPlayOutSpawnEntity packet = new PacketPlayOutSpawnEntity(entityClient, 0, CraftLocation.toBlockPosition(entity.getLocation()));
-        PacketPlayOutEntityMetadata metadata = new PacketPlayOutEntityMetadata(entity.getEntityId(), dataWatcher.c());
+    public void showEntity(org.bukkit.entity.LivingEntity entity, Player ...viewers) {
+        net.minecraft.world.entity.LivingEntity entityClient = ((CraftLivingEntity) entity).getHandle();
+        entityClient.setInvisible(true);
+        SynchedEntityData dataWatcher = entityClient.getEntityData();
+        ClientboundAddEntityPacket packet = new ClientboundAddEntityPacket(entityClient, 0, CraftLocation.toBlockPosition(entity.getLocation()));
+        ClientboundSetEntityDataPacket metadata = new ClientboundSetEntityDataPacket(entity.getEntityId(), dataWatcher.getNonDefaultValues());
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
-            view.f.b(packet);
-            view.f.b(metadata);
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            view.connection.send(packet);
+            view.connection.send(metadata);
         }
     }
 
     public void despawnFakeEntity(Entity entity, Player ...viewers) {
-        PacketPlayOutEntityDestroy packet = new PacketPlayOutEntityDestroy(entity.getEntityId());
+        ClientboundRemoveEntitiesPacket packet = new ClientboundRemoveEntitiesPacket(entity.getEntityId());
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
-            view.f.b(packet);
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            view.connection.send(packet);
         }
     }
 
     public void attachFakeEntity(Entity entity, Entity leashed, Player ...viewers) {
-        EntityPlayer entityPlayer = ((CraftPlayer) entity).getHandle();
-        PacketPlayOutAttachEntity packet = new PacketPlayOutAttachEntity(((CraftEntity)leashed).getHandle(), entityPlayer);
+        ServerPlayer entityPlayer = ((CraftPlayer) entity).getHandle();
+        ClientboundSetEntityLinkPacket packet = new ClientboundSetEntityLinkPacket(((CraftEntity)leashed).getHandle(), entityPlayer);
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
-            view.f.b(packet);
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            view.connection.send(packet);
         }
     }
 
     public void updatePositionFakeEntity(Entity leashed, Location location) {
         net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
-        entity.b(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        entity.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
     }
 
     public void teleportFakeEntity(Entity leashed, Set<Player> viewers) {
         net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
-        PacketPlayOutEntityTeleport packet = new PacketPlayOutEntityTeleport(entity.ar(), PositionMoveRotation.a(entity), Relative.j,  false);
+        ClientboundTeleportEntityPacket packet = new ClientboundTeleportEntityPacket(entity.getId(), PositionMoveRotation.of(entity), Relative.ALL, false);
         for(Player viewer : viewers) {
-            EntityPlayer view = ((CraftPlayer)viewer).getHandle();
-            view.f.b(packet);
+            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            view.connection.send(packet);
         }
     }
 
     @Override
     public ItemStack getItemWithNBTsCopy(ItemStack itemToCopy, ItemStack cosmetic) {
         net.minecraft.world.item.ItemStack copy = CraftItemStack.asNMSCopy(itemToCopy);
-        if(!copy.b(DataComponents.b)) return cosmetic;
+        if(!copy.has(DataComponents.CUSTOM_DATA)) return cosmetic;
         net.minecraft.world.item.ItemStack cosmeticItem = CraftItemStack.asNMSCopy(cosmetic);
-        CustomData copyCustomData = copy.a(DataComponents.b);
-        CustomData cosmeticCustomData = cosmeticItem.a(DataComponents.b);
-        NBTTagCompound copyNBT = copyCustomData.d();
-        NBTTagCompound cosmeticNBT = cosmeticCustomData.d();
-        for(String key : copyNBT.e()){
+        CustomData copyCustomData = copy.get(DataComponents.CUSTOM_DATA);
+        CustomData cosmeticCustomData = cosmeticItem.get(DataComponents.CUSTOM_DATA);
+        CompoundTag copyNBT = copyCustomData.copyTag();
+        CompoundTag cosmeticNBT = cosmeticCustomData.copyTag();
+        for(String key : copyNBT.getAllKeys()){
             Bukkit.getLogger().info("Key: " + key);
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
-                NBTTagCompound compound = copyNBT.p(key);
-                NBTTagCompound realCompound = cosmeticNBT.p(key);
-                Set<String> keys = compound.e();
+                CompoundTag compound = copyNBT.getCompound(key);
+                CompoundTag realCompound = cosmeticNBT.getCompound(key);
+                Set<String> keys = compound.getAllKeys();
                 for (String compoundKey : keys){
                     Bukkit.getLogger().info("Key of key: " + compoundKey);
-                    realCompound.a(compoundKey, compound.c(compoundKey));
+                    realCompound.put(compoundKey, compound.get(compoundKey));
                 }
-                cosmeticNBT.a(key, realCompound);
+                cosmeticNBT.put(key, realCompound);
                 continue;
             }
-            cosmeticNBT.a(key, copyNBT.c(key));
+            cosmeticNBT.put(key, copyNBT.get(key));
         }
-        cosmeticItem.b(DataComponents.b, cosmeticCustomData.a(nbtTagCompound -> nbtTagCompound.a(cosmeticNBT)));
+        cosmeticItem.set(DataComponents.CUSTOM_DATA, cosmeticCustomData.update(nbtTagCompound -> nbtTagCompound.merge(cosmeticNBT)));
         return CraftItemStack.asBukkitCopy(cosmeticItem);
     }
 
     public ItemStack getItemSavedWithNBTsUpdated(ItemStack itemCombined, ItemStack itemStack) {
         net.minecraft.world.item.ItemStack copy = CraftItemStack.asNMSCopy(itemCombined);
-        if(!copy.b(DataComponents.b)) return itemStack;
+        if(!copy.has(DataComponents.CUSTOM_DATA)) return itemStack;
         net.minecraft.world.item.ItemStack realItem = CraftItemStack.asNMSCopy(itemStack);
-        if(!realItem.b(DataComponents.b)) return itemStack;
-        CustomData copyCustomData = copy.a(DataComponents.b);
-        CustomData realCustomData = realItem.a(DataComponents.b);
-        NBTTagCompound copyNBT = copyCustomData.d();
-        NBTTagCompound realNBT = realCustomData.d();
-        for(String key : copyNBT.e()){
+        if(!realItem.has(DataComponents.CUSTOM_DATA)) return itemStack;
+        CustomData copyCustomData = copy.get(DataComponents.CUSTOM_DATA);
+        CustomData realCustomData = realItem.get(DataComponents.CUSTOM_DATA);
+        CompoundTag copyNBT = copyCustomData.copyTag();
+        CompoundTag realNBT = realCustomData.copyTag();
+        for(String key : copyNBT.getAllKeys()){
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
-                NBTTagCompound compound = copyNBT.p(key);
-                NBTTagCompound realCompound = realNBT.p(key);
-                Set<String> keys = compound.e();
+                CompoundTag compound = copyNBT.getCompound(key);
+                CompoundTag realCompound = realNBT.getCompound(key);
+                Set<String> keys = compound.getAllKeys();
                 for (String compoundKey : keys){
-                    if(!realCompound.e(compoundKey)) continue;
-                    realCompound.a(compoundKey, compound.c(compoundKey));
+                    if(!realCompound.contains(compoundKey)) continue;
+                    realCompound.put(compoundKey, compound.get(compoundKey));
                 }
-                realNBT.a(key, realCompound);
+                realNBT.put(key, realCompound);
                 continue;
             }
-            if(!realNBT.e(key)) continue;
-            realNBT.a(key, copyNBT.c(key));
+            if(!realNBT.contains(key)) continue;
+            realNBT.put(key, copyNBT.get(key));
         }
-        realItem.b(DataComponents.b, realCustomData.a(nbtTagCompound -> nbtTagCompound.a(realNBT)));
+        realItem.set(DataComponents.CUSTOM_DATA, realCustomData.update(nbtTagCompound -> nbtTagCompound.merge(realNBT)));
         return CraftItemStack.asBukkitCopy(realItem);
     }
 
@@ -362,17 +362,17 @@ public class VersionHandler extends Version {
 
     @Override
     public IRangeManager createRangeManager(Entity entity) {
-        WorldServer level = ((CraftWorld)entity.getWorld()).getHandle();
+        ServerLevel level = ((CraftWorld)entity.getWorld()).getHandle();
 
-        PlayerChunkMap.EntityTracker trackedEntity;
+        ChunkMap.TrackedEntity trackedEntity;
         try {
-            trackedEntity = level.m().a.K.get(entity.getEntityId());
+            trackedEntity = level.getChunkSource().chunkMap.entityMap.get(entity.getEntityId());
         } catch (NoSuchFieldError var8) {
             net.minecraft.world.entity.Entity nmsEntity = ((CraftEntity)entity).getHandle();
 
             try {
                 Field trackerField = nmsEntity.getClass().getField("tracker");
-                trackedEntity = (PlayerChunkMap.EntityTracker)trackerField.get(nmsEntity);
+                trackedEntity = (ChunkMap.TrackedEntity)trackerField.get(nmsEntity);
             } catch (IllegalAccessException | NoSuchFieldException var7) {
                 throw new RuntimeException(var7);
             }

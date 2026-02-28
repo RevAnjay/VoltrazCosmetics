@@ -22,7 +22,6 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.util.CraftLocation;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
@@ -47,13 +46,13 @@ public class CustomSprayHandler extends CustomSpray {
         customSprays.put(uuid, this);
         ServerLevel world = ((CraftWorld)player.getWorld()).getHandle();
         this.enumDirection = getDirection(blockFace);
-        itemFrame = new ItemFrame(EntityType.ai, world);
-        this.entity = (ItemFrame) itemFrame.getBukkitEntity();
+        itemFrame = new ItemFrame(EntityType.ITEM_FRAME, world);
+        this.entity = (org.bukkit.entity.ItemFrame) itemFrame.getBukkitEntity();
         this.location = location;
         this.itemStack = CraftItemStack.asNMSCopy(itemStack);
         this.mapView = mapView;
         this.rotation = rotation;
-        itemFrame.a(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        itemFrame.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
     }
 
     @Override
@@ -65,13 +64,13 @@ public class CustomSprayHandler extends CustomSpray {
             return;
         }
         if(!player.getWorld().equals(location.getWorld())) return;
-        itemFrame.k(true); //Invisible
-        itemFrame.n(true); //Invulnerable
+        itemFrame.setInvisible(true);
+        itemFrame.setInvulnerable(true);
         itemFrame.setItem(itemStack, true, false);
 
-        itemFrame.a(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
-        itemFrame.a(enumDirection);
-        itemFrame.b(rotation);
+        itemFrame.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        itemFrame.setDirection(enumDirection);
+        itemFrame.setRotation(rotation);
         sendPackets(player, spawnItemFrame());
         if(mapView != null) {
             player.sendMap(mapView);
@@ -109,32 +108,32 @@ public class CustomSprayHandler extends CustomSpray {
     private Direction getDirection(BlockFace facing){
         switch (facing){
             case NORTH:
-                return Direction.c;
+                return Direction.NORTH;
             case SOUTH:
-                return Direction.d;
+                return Direction.SOUTH;
             case WEST:
-                return Direction.e;
+                return Direction.WEST;
             case EAST:
-                return Direction.f;
+                return Direction.EAST;
             case DOWN:
-                return Direction.a;
+                return Direction.DOWN;
             default:
-                return Direction.b;
+                return Direction.UP;
         }
     }
 
     private List<Packet<?>> spawnItemFrame() {
-        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(itemFrame, enumDirection.d(), CraftLocation.toBlockPosition(location));
-        ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(itemFrame.an(), itemFrame.ar().c());
+        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(itemFrame, enumDirection.get3DDataValue(), CraftLocation.toBlockPosition(location));
+        ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(itemFrame.getId(), itemFrame.getEntityData().getNonDefaultValues());
         return Arrays.asList(spawnEntity, entityMetadata);
     }
 
     private Packet<?> destroyItemFrame() {
-        return new ClientboundRemoveEntitiesPacket(itemFrame.an());
+        return new ClientboundRemoveEntitiesPacket(itemFrame.getId());
     }
 
     private void sendPackets(Player player, List<Packet<?>> packets) {
-        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().c);
+        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().connection);
         if(pipeline == null) return;
         for(Packet<?> packet : packets)
             pipeline.write(packet);
@@ -150,18 +149,18 @@ public class CustomSprayHandler extends CustomSpray {
                 Class<?> clazz = Class.forName(className);
                 Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
-                Object[] parameters = { playerConnection.f };
+                Object[] parameters = { playerConnection.player };
                 Connection result = (Connection) method.invoke(null, parameters);
-                return result.n.pipeline();
+                return result.channel.pipeline();
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 return null;
             }
         }
         try {
-            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
             privateConnection.setAccessible(true);
             Connection networkManager = (Connection) privateConnection.get(playerConnection);
-            return networkManager.n.pipeline();
+            return networkManager.channel.pipeline();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             return null;
         }

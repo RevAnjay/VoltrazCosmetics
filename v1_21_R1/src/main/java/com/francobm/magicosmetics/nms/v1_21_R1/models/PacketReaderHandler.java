@@ -21,7 +21,7 @@ public class PacketReaderHandler extends PacketReader{
     public void injectPlayer(Player player) {
         ServerPlayer entityPlayer = ((CraftPlayer) player).getHandle();
         MCChannelHandler cdh = new MCChannelHandler(entityPlayer);
-        ChannelPipeline pipeline = getPrivateChannelPipeline(entityPlayer.c);
+        ChannelPipeline pipeline = getPrivateChannelPipeline(entityPlayer.connection);
         if(pipeline == null) return;
         for (String name : pipeline.toMap().keySet()) {
             if (pipeline.get(name) instanceof Connection) {
@@ -33,7 +33,7 @@ public class PacketReaderHandler extends PacketReader{
 
     public void removePlayer(Player player) {
         CraftPlayer craftPlayer = (CraftPlayer) player;
-        Channel channel = getPrivateChannel(craftPlayer.getHandle().c);
+        Channel channel = getPrivateChannel(craftPlayer.getHandle().connection);
         if(channel == null) return;
         channel.eventLoop().submit(() -> {
             channel.pipeline().remove("magic_cosmetics_packet_handler");
@@ -49,19 +49,19 @@ public class PacketReaderHandler extends PacketReader{
                 Class<?> clazz = Class.forName(className);
                 Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
-                Object[] parameters = { playerConnection.f };
+                Object[] parameters = { playerConnection.player };
                 Connection result = (Connection) method.invoke(null, parameters);
-                return result.n.pipeline();
+                return result.channel.pipeline();
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                      IllegalAccessException exception) {
                 throw new RuntimeException(exception);
             }
         }
         try {
-            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
             privateConnection.setAccessible(true);
             Connection networkManager = (Connection) privateConnection.get(playerConnection);
-            return networkManager.n.pipeline();
+            return networkManager.channel.pipeline();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             Bukkit.getLogger().severe("Error: Channel Pipeline not found");
             return null;
@@ -77,19 +77,19 @@ public class PacketReaderHandler extends PacketReader{
                 Class<?> clazz = Class.forName(className);
                 Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
-                Object[] parameters = { playerConnection.f };
+                Object[] parameters = { playerConnection.player };
                 Connection result = (Connection) method.invoke(null, parameters);
-                return result.n;
+                return result.channel;
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                      IllegalAccessException exception) {
                 throw new RuntimeException(exception);
             }
         }
         try {
-            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
             privateConnection.setAccessible(true);
             Connection networkManager = (Connection) privateConnection.get(playerConnection);
-            return networkManager.n;
+            return networkManager.channel;
         } catch (NoSuchFieldException | IllegalAccessException e) {
             Bukkit.getLogger().severe("Error: Channel not found");
             return null;

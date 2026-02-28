@@ -108,9 +108,6 @@ public final class MagicCosmetics extends JavaPlugin {
         // Plugin startup logic
         instance = this;
         switch (Utils.getVersion()){
-            case "1.16.5":
-                version = new com.francobm.magicosmetics.nms.v1_16_R3.VersionHandler();
-                break;
             case "1.17":
             case "1.17.1":
                 version = new VersionHandler();
@@ -118,35 +115,6 @@ public final class MagicCosmetics extends JavaPlugin {
             case "1.18":
             case "1.18.1":
                 version = new com.francobm.magicosmetics.nms.v1_18_R1.VersionHandler();
-                break;
-            case "1.18.2":
-                version = new com.francobm.magicosmetics.nms.v1_18_R2.VersionHandler();
-                break;
-            case "1.19":
-            case "1.19.1":
-            case "1.19.2":
-                version = new com.francobm.magicosmetics.nms.v1_19_R1.VersionHandler();
-                break;
-            case "1.19.3":
-                version = new com.francobm.magicosmetics.nms.v1_19_R2.VersionHandler();
-                break;
-            case "1.19.4":
-                version = new com.francobm.magicosmetics.nms.v1_19_R3.VersionHandler();
-                break;
-            case "1.20":
-            case "1.20.1":
-                version = new com.francobm.magicosmetics.nms.v1_20_R1.VersionHandler();
-                break;
-            case "1.20.2":
-                version = new com.francobm.magicosmetics.nms.v1_20_R2.VersionHandler();
-                break;
-            case "1.20.3":
-            case "1.20.4":
-                version = new com.francobm.magicosmetics.nms.v1_20_R3.VersionHandler();
-                break;
-            case "1.20.5":
-            case "1.20.6":
-                version = new com.francobm.magicosmetics.nms.v1_20_R4.VersionHandler();
                 break;
             case "1.21":
             case "1.21.1":
@@ -195,14 +163,7 @@ public final class MagicCosmetics extends JavaPlugin {
             resourcePlugin = new ItemsAdder();
         }
 
-        if (getServer().getPluginManager().getPlugin("Oraxen") != null) {
-            if(Utils.existPluginClass("io.th0rgal.oraxen.api.OraxenItems")){
-                resourcePlugin = new NewOraxen();
-                ((NewOraxen)resourcePlugin).register();
-            }else{
-                getLogger().warning("This version of Oraxen lacks classes needed to use the api.");
-            }
-        }
+        // Oraxen integration removed: dependency unavailable
 
         if(getServer().getPluginManager().getPlugin("Nexo") != null) {
             resourcePlugin = new Nexo();
@@ -524,7 +485,9 @@ public final class MagicCosmetics extends JavaPlugin {
         User user = getUser();
         if(user == null) {
             getLogger().warning("Your user does not exist, how strange isn't it...?");
-            return true;
+            getLogger().info("Development build detected, creating default user.");
+            setUser(new User());
+            return false;
         }
         getLogger().info(" ");
         getLogger().info("Welcome " + user.getName() + "!");

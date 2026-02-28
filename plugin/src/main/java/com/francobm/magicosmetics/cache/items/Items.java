@@ -142,7 +142,7 @@ public class Items {
                 itemMeta.addAttributeModifier(Attribute.GENERIC_ATTACK_DAMAGE, new AttributeModifier("foo",0,AttributeModifier.Operation.MULTIPLY_SCALAR_1)); // This is necessary as of 1.20.6
             }*/
             if(glow){
-                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                itemMeta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
             if(modelData != -1) {
@@ -384,7 +384,7 @@ public class Items {
         }
         itemMeta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
         if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-            itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+            itemMeta.addEnchant(Enchantment.UNBREAKING, 1, true);
         }
         itemMeta.addItemFlags(ItemFlag.HIDE_DYE);
         itemMeta.setUnbreakable(this.itemStack.getItemMeta().isUnbreakable());
@@ -433,7 +433,7 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
             meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES);
@@ -468,10 +468,10 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         if(itemStack.getItemMeta() instanceof MapMeta){
@@ -503,10 +503,10 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         if(itemStack.getItemMeta() instanceof FireworkEffectMeta) {
@@ -538,10 +538,10 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         return itemStack;
@@ -586,7 +586,7 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
             meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES);
@@ -627,10 +627,10 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         if(itemStack.getItemMeta() instanceof MapMeta){
@@ -668,10 +668,10 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         if(itemStack.getItemMeta() instanceof FireworkEffectMeta) {
@@ -709,10 +709,10 @@ public class Items {
                 }
                 meta.addItemFlags(this.itemStack.getItemMeta().getItemFlags().toArray(new ItemFlag[0]));
                 if(this.itemStack.getItemMeta().hasItemFlag(ItemFlag.HIDE_ENCHANTS)){
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 }
             }
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         return itemStack;
@@ -732,21 +732,21 @@ public class Items {
             PotionMeta meta = (PotionMeta) itemStack.getItemMeta();
             if(meta == null) return this;
             meta.setColor(color);
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         if(itemStack.getItemMeta() instanceof MapMeta){
             MapMeta meta = (MapMeta) itemStack.getItemMeta();
             if(meta == null) return this;
             meta.setColor(color);
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         if(itemStack.getItemMeta() instanceof FireworkEffectMeta){
             FireworkEffectMeta meta = (FireworkEffectMeta) itemStack.getItemMeta();
             if(meta == null) return this;
             meta.setEffect(FireworkEffect.builder().withColor(color).build());
-            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
             itemStack.setItemMeta(meta);
         }
         return this;

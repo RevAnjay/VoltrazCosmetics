@@ -313,7 +313,7 @@ public abstract class Cosmetic {
                     }
 
                     if(glow){
-                        itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, 1);
+                        itemStack.addUnsafeEnchantment(Enchantment.UNBREAKING, 1);
                         itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                     }
                     if(hide_attributes) {

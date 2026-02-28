@@ -3,18 +3,18 @@ package com.francobm.magicosmetics.nms.v1_21_R2.cache;
 import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.nms.spray.CustomSpray;
 import io.netty.channel.ChannelPipeline;
-import net.minecraft.core.EnumDirection;
-import net.minecraft.network.NetworkManager;
+import net.minecraft.core.Direction;
+import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.PacketPlayOutEntityDestroy;
-import net.minecraft.network.protocol.game.PacketPlayOutEntityMetadata;
-import net.minecraft.network.protocol.game.PacketPlayOutSpawnEntity;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.decoration.EntityItemFrame;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -22,7 +22,6 @@ import org.bukkit.craftbukkit.v1_21_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_21_R2.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_21_R2.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.v1_21_R2.util.CraftLocation;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
@@ -34,10 +33,10 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class CustomSprayHandler extends CustomSpray {
-    private final EntityItemFrame itemFrame;
+    private final ItemFrame itemFrame;
     private final Location location;
     private final net.minecraft.world.item.ItemStack itemStack;
-    private final EnumDirection enumDirection;
+    private final Direction enumDirection;
     private final MapView mapView;
     private final int rotation;
 
@@ -45,15 +44,15 @@ public class CustomSprayHandler extends CustomSpray {
         players = new CopyOnWriteArrayList<>(new ArrayList<>());
         this.uuid = player.getUniqueId();
         customSprays.put(uuid, this);
-        WorldServer world = ((CraftWorld)player.getWorld()).getHandle();
-        this.enumDirection = getEnumDirection(blockFace);
-        itemFrame = new EntityItemFrame(EntityTypes.at, world);
-        this.entity = (ItemFrame) itemFrame.getBukkitEntity();
+        ServerLevel world = ((CraftWorld)player.getWorld()).getHandle();
+        this.enumDirection = getDirection(blockFace);
+        itemFrame = new ItemFrame(EntityType.ITEM_FRAME, world);
+        this.entity = (org.bukkit.entity.ItemFrame) itemFrame.getBukkitEntity();
         this.location = location;
         this.itemStack = CraftItemStack.asNMSCopy(itemStack);
         this.mapView = mapView;
         this.rotation = rotation;
-        itemFrame.a(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        itemFrame.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
     }
 
     @Override
@@ -65,13 +64,13 @@ public class CustomSprayHandler extends CustomSpray {
             return;
         }
         if(!player.getWorld().equals(location.getWorld())) return;
-        itemFrame.k(true); //Invisible
-        itemFrame.n(true); //Invulnerable
+        itemFrame.setInvisible(true);
+        itemFrame.setInvulnerable(true);
         itemFrame.setItem(itemStack, true, false);
 
-        itemFrame.a(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
-        itemFrame.a(enumDirection);
-        itemFrame.b(rotation);
+        itemFrame.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        itemFrame.setDirection(enumDirection);
+        itemFrame.setRotation(rotation);
         sendPackets(player, spawnItemFrame());
         if(mapView != null) {
             player.sendMap(mapView);
@@ -106,62 +105,62 @@ public class CustomSprayHandler extends CustomSpray {
         players.remove(player.getUniqueId());
     }
 
-    private EnumDirection getEnumDirection(BlockFace facing){
+    private Direction getDirection(BlockFace facing){
         switch (facing){
             case NORTH:
-                return EnumDirection.c;
+                return Direction.NORTH;
             case SOUTH:
-                return EnumDirection.d;
+                return Direction.SOUTH;
             case WEST:
-                return EnumDirection.e;
+                return Direction.WEST;
             case EAST:
-                return EnumDirection.f;
+                return Direction.EAST;
             case DOWN:
-                return EnumDirection.a;
+                return Direction.DOWN;
             default:
-                return EnumDirection.b;
+                return Direction.UP;
         }
     }
 
     private List<Packet<?>> spawnItemFrame() {
-        PacketPlayOutSpawnEntity spawnEntity = new PacketPlayOutSpawnEntity(itemFrame, enumDirection.d(), CraftLocation.toBlockPosition(location));
-        PacketPlayOutEntityMetadata entityMetadata = new PacketPlayOutEntityMetadata(itemFrame.ar(), itemFrame.au().c());
+        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(itemFrame, enumDirection.get3DDataValue(), CraftLocation.toBlockPosition(location));
+        ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(itemFrame.getId(), itemFrame.getEntityData().getNonDefaultValues());
         return Arrays.asList(spawnEntity, entityMetadata);
     }
 
     private Packet<?> destroyItemFrame() {
-        return new PacketPlayOutEntityDestroy(itemFrame.ar());
+        return new ClientboundRemoveEntitiesPacket(itemFrame.getId());
     }
 
     private void sendPackets(Player player, List<Packet<?>> packets) {
-        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().f);
+        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().connection);
         if(pipeline == null) return;
         for(Packet<?> packet : packets)
             pipeline.write(packet);
         pipeline.flush();
     }
 
-    private ChannelPipeline getPrivateChannelPipeline(PlayerConnection playerConnection) {
+    private ChannelPipeline getPrivateChannelPipeline(ServerGamePacketListenerImpl playerConnection) {
         MagicCosmetics plugin = MagicCosmetics.getInstance();
         if(plugin.getServer().getPluginManager().isPluginEnabled("Denizen")){
             String className = "com.denizenscript.denizen.nms.v1_20.impl.network.handlers.DenizenNetworkManagerImpl";
             String methodName = "getConnection";
             try {
                 Class<?> clazz = Class.forName(className);
-                Class<?>[] typeParameters = { EntityPlayer.class };
+                Class<?>[] typeParameters = { ServerPlayer.class };
                 Method method = clazz.getMethod(methodName, typeParameters);
-                Object[] parameters = { playerConnection.f };
-                NetworkManager result = (NetworkManager) method.invoke(null, parameters);
-                return result.n.pipeline();
+                Object[] parameters = { playerConnection.player };
+                Connection result = (Connection) method.invoke(null, parameters);
+                return result.channel.pipeline();
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 return null;
             }
         }
         try {
-            Field privateNetworkManager = ServerCommonPacketListenerImpl.class.getDeclaredField("e");
-            privateNetworkManager.setAccessible(true);
-            NetworkManager networkManager = (NetworkManager) privateNetworkManager.get(playerConnection);
-            return networkManager.n.pipeline();
+            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
+            privateConnection.setAccessible(true);
+            Connection networkManager = (Connection) privateConnection.get(playerConnection);
+            return networkManager.channel.pipeline();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             return null;
         }
