@@ -111,3 +111,31 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+# Project-specific: Paper server JAR and extracted files
+paper-*.jar
+paper-extract/
+
+# Local library stubs/JARs (not actual libraries)
+*.jar
+libraries/
+
+# Local Maven cache
+cache/
+
+# Working/temp folders
+Hype/
+versions/
+
+# VS Code / Editor settings
+.vscode/
+.settings/
+.project
+.classpath
+
+# Eclipse
+.metadata/
+
+# Gemini/AI assistant files
+.gemini/
+.agents/

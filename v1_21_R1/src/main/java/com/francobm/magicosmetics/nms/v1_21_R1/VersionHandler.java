@@ -372,7 +372,7 @@ public class VersionHandler extends Version {
                 Field trackerField = nmsEntity.getClass().getField("tracker");
                 trackedEntity = (ChunkMap.TrackedEntity)trackerField.get(nmsEntity);
             } catch (IllegalAccessException | NoSuchFieldException var7) {
-                throw new RuntimeException(var7);
+                return null;
             }
         }
 

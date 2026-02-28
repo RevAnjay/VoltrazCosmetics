@@ -293,14 +293,23 @@ public abstract class Cosmetic {
                         if(cosmeticsConf.contains("cosmetics." + key + ".item." + pathName)) {
                             String id = cosmeticsConf.getString("cosmetics." + key + ".item." + pathName);
                             ItemStack resourceItem = plugin.getResourcePlugin().getItemStackById(id);
-                            if(resourceItem == null){
-                                plugin.getLogger().warning("Resource (" + plugin.getResourcePlugin().getProviderName() + ") Item: '" + id + "' Not Found skipping...");
-                                continue;
+                            if(resourceItem != null){
+                                itemStack = resourceItem.clone();
+                                modelData = -1;
+                            } else {
+                                plugin.getLogger().warning("Resource (" + plugin.getResourcePlugin().getProviderName() + ") Item: '" + id + "' Not Found, falling back to material+modeldata...");
                             }
-                            itemStack = resourceItem.clone();
-                            modelData = -1;
                         }
                         // If resource plugin path not configured for this cosmetic, fall through to use vanilla material + modeldata
+                    }
+                    if(itemStack == null && modelData > 0){
+                        // Pre-read type to pick the right default material
+                        String preType = cosmeticsConf.getString("cosmetics." + key + ".type");
+                        if(preType != null && preType.equalsIgnoreCase("HAT")) {
+                            itemStack = XMaterial.CARVED_PUMPKIN.parseItem();
+                        } else {
+                            itemStack = XMaterial.PAPER.parseItem();
+                        }
                     }
                     if(itemStack == null){
                         continue;
