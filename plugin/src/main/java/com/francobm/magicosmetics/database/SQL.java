@@ -27,6 +27,8 @@ public abstract class SQL {
 
     public abstract DatabaseType getDatabaseType();
 
+    public abstract void close();
+
     protected void closeConnections(PreparedStatement preparedStatement, Connection connection, ResultSet resultSet){
         if(connection == null) return;
         try{

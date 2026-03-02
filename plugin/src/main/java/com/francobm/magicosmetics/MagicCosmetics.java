@@ -419,6 +419,7 @@ public final class MagicCosmetics extends JavaPlugin {
             playerData.exitZoneSync();
         }
         sql.savePlayers();
+        sql.close();
         if(bossBar != null) {
             for (BossBar bar : bossBar) {
                 bar.removeAll();

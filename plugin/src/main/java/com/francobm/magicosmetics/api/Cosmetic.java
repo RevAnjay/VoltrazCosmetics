@@ -409,6 +409,10 @@ public abstract class Cosmetic {
                 if(cosmeticsConf.contains("cosmetics." + key + ".display")){
                     isDisplay = cosmeticsConf.getBoolean("cosmetics." + key + ".display");
                 }
+                if(cosmeticsConf.contains("cosmetics." + key + ".height")){
+                    height = (float) cosmeticsConf.getDouble("cosmetics." + key + ".height");
+                    plugin.getLogger().info("Cosmetic '" + key + "' height=" + height + " display=" + isDisplay);
+                }
                 if(cosmeticsConf.contains("cosmetics." + key + ".overlaps")){
                     overlaps = cosmeticsConf.getBoolean("cosmetics." + key + ".overlaps");
                 }

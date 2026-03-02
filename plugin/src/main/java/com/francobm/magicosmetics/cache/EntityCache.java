@@ -15,7 +15,7 @@ import org.bukkit.entity.Player;
 import java.util.*;
 
 public class EntityCache {
-    public static Map<UUID, EntityCache> entities = new java.util.HashMap<>();
+    public static Map<UUID, EntityCache> entities = new java.util.concurrent.ConcurrentHashMap<>();
     private final UUID uniqueId;
     private boolean npc = false;
     private Entity entity;
@@ -178,7 +178,7 @@ public class EntityCache {
                 MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.OFF_HAND, wStick.getItemColor(player));
                 return;
             }
-            MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.OFF_HAND, hat.getItemColor());
+            MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.OFF_HAND, wStick.getItemColor());
             return;
         }
         MagicCosmetics.getInstance().getCitizens().EquipmentNPC(ItemSlot.OFF_HAND, getUniqueId(), wStick.getItemColor());

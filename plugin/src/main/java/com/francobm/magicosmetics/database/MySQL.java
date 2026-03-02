@@ -137,8 +137,6 @@ public class MySQL extends SQL{
             plugin.getLogger().severe("Failed to save player information: " + throwable.getMessage());
         } finally {
             closeConnections(statement, connection, null);
-            if(close)
-                player.clearCosmeticsToSaveData();
         }
     }
 
@@ -242,7 +240,7 @@ public class MySQL extends SQL{
     }
 
     private CompletableFuture<Void> savePlayerInfoAsync(PlayerData player){
-        player.clearCosmeticsToSaveData();
+        // clearCosmeticsToSaveData() is already called by the listener before this method
         return checkInfoAsync(player.getUniqueId()).thenCompose(check -> CompletableFuture.runAsync(() -> {
             Connection connection = null;
             PreparedStatement statement = null;
@@ -325,6 +323,11 @@ public class MySQL extends SQL{
             closeConnections(preparedStatement, connection, resultSet);
         }
         return false;
+    }
+
+    @Override
+    public void close() {
+        hikariCP.close();
     }
 
     @Override

@@ -29,7 +29,7 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.*;
 
 public class PlayerData {
-    public static Map<UUID, PlayerData> players = new HashMap<>();
+    public static Map<UUID, PlayerData> players = new java.util.concurrent.ConcurrentHashMap<>();
     private OfflinePlayer offlinePlayer;
     private final UUID uniqueId;
     private final String name;
@@ -833,6 +833,11 @@ public class PlayerData {
             return;
         }
         if(isZone) return;
+        // Don't equip walking stick if player already has a non-cosmetic item in off-hand
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+        if(!offHand.getType().isAir() && !wStick.isCosmetic(offHand) && wStick.getCurrentItemSaved() == null) {
+            return;
+        }
         MagicCosmetics plugin = MagicCosmetics.getInstance();
         if(plugin.isResourcePlugin() && plugin.getResourcePlugin() instanceof ItemsAdder) {
             ItemsAdder itemsAdder = (ItemsAdder) plugin.getResourcePlugin();

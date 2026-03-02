@@ -138,7 +138,7 @@ public class PlayerBagDisplayHandler extends PlayerBag {
     }
 
     private List<Packet<?>> getBackPackSpawn(ItemStack backpackItem, float height) {
-        backPack.setTransformation(new Transformation(new Vector3f(0, height, -0.3f), new Quaternionf(), new Vector3f(), new Quaternionf()));
+        backPack.setTransformation(new Transformation(new Vector3f(0, height, -0.3f), new Quaternionf(), new Vector3f(1, 1, 1), new Quaternionf()));
         backPack.setItemStack(CraftItemStack.asNMSCopy(backpackItem));
         ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(backPack, 0, CraftLocation.toBlockPosition(entityPlayer.getBukkitEntity().getLocation()));
         ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(backPack.getId(), backPack.getEntityData().getNonDefaultValues());

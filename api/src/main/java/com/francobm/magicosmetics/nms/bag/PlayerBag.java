@@ -69,6 +69,12 @@ public abstract class PlayerBag {
     }
 
     protected Set<Player> getPlayersInRange() {
+        if (rangeManager == null) {
+            Set<Player> set = new HashSet<>();
+            Player p = getPlayer();
+            if (p != null) set.add(p);
+            return set;
+        }
         Set<Player> set = rangeManager.getPlayerInRange();
         set.add(getPlayer());
         return set;

@@ -1,18 +1,18 @@
 colors:
   rows:
     '3':
-      character: 
-      selected: 쌍,쌍,쌍,쌍,     쌍,          쌍,              쌍
+      character: ''
+      selected: ''
     '4':
-      character: 
-      selected: 쌍,쌍,쌍,쌍,쌍,     쌍,          쌍
+      character: ''
+      selected: ''
     '5':
-      character: 
-      selected: 쌍,쌍,쌍,쌍,쌍,쌍,     쌍
+      character: ''
+      selected: ''
   color1:
-    name: '&7Red Paint'
+    name: '&7Red'
     primary-color: RED
-    select: 쌉
+    select: ''
     with-row: true
     secondary-colors:
       - '#FF7272'
@@ -25,9 +25,9 @@ colors:
       - '#9B3500'
     slot: 3
   color2:
-    name: '&7Orange Paint'
+    name: '&7Orange'
     primary-color: ORANGE
-    select: 쌉
+    select: ''
     with-row: true
     secondary-colors:
       - '#FF9D6A'
@@ -40,9 +40,9 @@ colors:
       - '#9F3600'
     slot: 4
   color3:
-    name: '&7Yellow Paint'
+    name: '&7Yellow'
     primary-color: YELLOW
-    select: 쌉
+    select: ''
     with-row: true
     secondary-colors:
       - '#FFE685'
@@ -56,9 +56,9 @@ colors:
       - '#8F7100'
     slot: 5
   color4:
-    name: '&7Pink Paint'
+    name: '&7Pink'
     primary-color: PINK
-    select: 쌊
+    select: ''
     with-row: true
     secondary-colors:
       - '#FFB3E9'
@@ -73,9 +73,9 @@ colors:
       - '#80005A'
     slot: 12
   color5:
-    name: '&7White Paint'
+    name: '&7White'
     primary-color: WHITE
-    select: 쌊
+    select: ''
     with-row: true
     secondary-colors:
       - '#FFFFFF'
@@ -90,9 +90,9 @@ colors:
       - '#2F2F2F'
     slot: 13
   color6:
-    name: '&7Green Paint'
+    name: '&7Green'
     primary-color: GREEN
-    select: 쌊
+    select: ''
     with-row: true
     secondary-colors:
       - '#B9FFB9'
@@ -107,9 +107,9 @@ colors:
       - '#095A19'
     slot: 14
   color7:
-    name: '&7Purple Paint'
+    name: '&7Purple'
     primary-color: PURPLE
-    select: 쌋
+    select: ''
     with-row: true
     secondary-colors:
       - '#D3ACFF'
@@ -124,9 +124,9 @@ colors:
       - '#2A0059'
     slot: 21
   color8:
-    name: '&7Blue Paint'
+    name: '&7Blue'
     primary-color: BLUE
-    select: 쌋
+    select: ''
     with-row: true
     secondary-colors:
       - '#7F88FF'
@@ -140,9 +140,9 @@ colors:
       - '#00094C'
     slot: 22
   color9:
-    name: '&7Light Blue Paint'
+    name: '&7Light Blue'
     primary-color: LIGHT_BLUE
-    select: 쌋
+    select: ''
     with-row: true
     secondary-colors:
       - '#B3E4FF'
@@ -165,184 +165,171 @@ items:
         - '&6paintable'
       amount: 1
       glow: false
-      modeldata: 0
   back-button-template:
     item:
-      display: '&cPrevious page'
-      material: FEATHER
+      display: '&c← ʙᴀᴄᴋ'
+      material: ARROW
       amount: 1
       glow: false
-      modeldata: 10037
   back-button-cancel-template:
     item:
-      display: '&cPrevious page'
-      material: FEATHER
+      display: '&8← ʙᴀᴄᴋ'
+      material: ARROW
       amount: 1
       glow: false
-      modeldata: 10038
   next-button-template:
     item:
-      display: '&aNext page'
-      material: FEATHER
+      display: '&aɴᴇxᴛ →'
+      material: ARROW
       amount: 1
       glow: false
-      modeldata: 10039
   next-button-cancel-template:
     item:
-      display: '&aNext page'
-      material: FEATHER
+      display: '&8ɴᴇxᴛ →'
+      material: ARROW
       amount: 1
       glow: false
-      modeldata: 10040
   hat-template:
     item:
       display: '%name%'
       material: PLAYER_HEAD
       lore-available:
-        - '&6Type: &7%type%'
-        - '&eCondition: %available%'
-        - '&cEquip: %equip%'
+        - ''
+        - '&7%type% &8| %available%'
+        - '%equip%'
+        - '&e▶ ᴄʟɪᴄᴋ ᴛᴏ ᴇǫᴜɪᴘ'
       lore-unavailable:
-        - '&cYou do not have this cosmetic available!'
-        - '&9See in -> https://spigotmc.org'
+        - ''
+        - '&c✖ ʟᴏᴄᴋᴇᴅ'
       amount: 1
       glow: false
-      modeldata: 10000
   bag-template:
     item:
       display: '%name%'
       material: PLAYER_HEAD
       lore-available:
-        - '&6Type: &7%type%'
-        - '&eCondition: %available%'
-        - '&cEquip: %equip%'
+        - ''
+        - '&7%type% &8| %available%'
+        - '%equip%'
+        - '&e▶ ᴄʟɪᴄᴋ ᴛᴏ ᴇǫᴜɪᴘ'
       lore-unavailable:
-        - '&cYou do not have this cosmetic available!'
-        - '&9See in -> https://spigotmc.org'
+        - ''
+        - '&c✖ ʟᴏᴄᴋᴇᴅ'
       amount: 1
       glow: false
-      modeldata: 10000
   wstick-template:
     item:
       display: '%name%'
       material: PLAYER_HEAD
       lore-available:
-        - '&6Type: &7%type%'
-        - '&eCondition: %available%'
-        - '&cEquip: %equip%'
+        - ''
+        - '&7%type% &8| %available%'
+        - '%equip%'
+        - '&e▶ ᴄʟɪᴄᴋ ᴛᴏ ᴇǫᴜɪᴘ'
       lore-unavailable:
-        - '&cYou do not have this cosmetic available!'
-        - '&9See in -> https://spigotmc.org'
+        - ''
+        - '&c✖ ʟᴏᴄᴋᴇᴅ'
       amount: 1
       glow: false
-      modeldata: 10000
   balloon-template:
     item:
       display: '%name%'
       material: PLAYER_HEAD
       lore-available:
-        - '&6Type: &7%type%'
-        - '&eCondition: %available%'
-        - '&cEquip: %equip%'
+        - ''
+        - '&7%type% &8| %available%'
+        - '%equip%'
+        - '&e▶ ᴄʟɪᴄᴋ ᴛᴏ ᴇǫᴜɪᴘ'
       lore-unavailable:
-        - '&cYou do not have this cosmetic available!'
-        - '&9See in -> https://spigotmc.org'
+        - ''
+        - '&c✖ ʟᴏᴄᴋᴇᴅ'
       amount: 1
       glow: false
-      modeldata: 10000
   spray-template:
     item:
       display: '%name%'
       material: PLAYER_HEAD
       lore-available:
-        - '&6Type: &7%type%'
-        - '&eCondition: %available%'
-        - '&cEquip: %equip%'
+        - ''
+        - '&7%type% &8| %available%'
+        - '%equip%'
+        - '&e▶ ᴄʟɪᴄᴋ ᴛᴏ ᴇǫᴜɪᴘ'
       lore-unavailable:
-        - '&cYou do not have this cosmetic available!'
-        - '&9See in -> https://spigotmc.org'
+        - ''
+        - '&c✖ ʟᴏᴄᴋᴇᴅ'
       amount: 1
       glow: false
-      modeldata: 10000
   color-template:
     item:
-      display: '&aHere you can paint your cosmetic.'
+      display: '&aᴘɪᴄᴋ ᴄᴏʟᴏʀ'
       material: LEATHER_HORSE_ARMOR
       amount: 1
       lore-selected:
-        - '&a➜ Selected'
+        - '&a✔ sᴇʟᴇᴄᴛᴇᴅ'
       lore-notselected:
-        - '&8➜ Click to select'
+        - '&8▶ ᴄʟɪᴄᴋ ᴛᴏ sᴇʟᴇᴄᴛ'
       lore-unavailable:
-        - '&cYou do not have this color available!'
-        - '&9See in -> https://spigotmc.org'
+        - '&c✖ ʟᴏᴄᴋᴇᴅ'
       glow: false
-      modeldata: 10012
   pages-template:
     item:
-      display: '&eActual page: &b%pages%'
-      material: COMPASS
+      display: '&7ᴘᴀɢᴇ &f%pages%'
+      material: PAPER
       lore:
         - ''
       amount: 1
       glow: false
-      modeldata: 10000
   hat_menu:
     item:
-      display: '&bHats menu'
-      material: FEATHER
+      display: '&fʜᴀᴛs'
+      material: CARVED_PUMPKIN
       lore:
-        - '&7Available hats: %hats_count%'
+        - '&7%hats_count% ᴀᴠᴀɪʟᴀʙʟᴇ'
       amount: 1
       glow: false
-      modeldata: 10041
   bag_menu:
     item:
-      display: '&bBackpacks menu'
-      material: FEATHER
+      display: '&fʙᴀᴄᴋᴘᴀᴄᴋ'
+      material: CHEST
       lore:
-        - '&7Available backpacks: %bags_count%'
+        - '&7%bags_count% ᴀᴠᴀɪʟᴀʙʟᴇ'
       amount: 1
       glow: false
-      modeldata: 10041
   wstick_menu:
     item:
-      display: '&bCanes Menu'
-      material: FEATHER
+      display: '&fᴄᴀɴᴇs'
+      material: STICK
       lore:
-        - '&7Available canes: %wsticks_count%'
+        - '&7%wsticks_count% ᴀᴠᴀɪʟᴀʙʟᴇ'
       amount: 1
       glow: false
-      modeldata: 10041
   balloon_menu:
     item:
-      display: '&bBalloons Menu'
-      material: FEATHER
+      display: '&fʙᴀʟʟᴏᴏɴ'
+      material: SLIME_BALL
       lore:
-        - '&7Available balloons: %balloons_count%'
+        - '&7%balloons_count% ᴀᴠᴀɪʟᴀʙʟᴇ'
       amount: 1
       glow: false
-      modeldata: 10041
   spray_menu:
     item:
-      display: '&bSprays Menu'
-      material: FEATHER
+      display: '&fsᴘʀᴀʏ'
+      material: PAINTING
       lore:
-        - '&7Available balloons: %sprays_count%'
+        - '&7%sprays_count% ᴀᴠᴀɪʟᴀʙʟᴇ'
       amount: 1
       glow: false
-      modeldata: 10041
 menus:
   panels:
-    '3': 쌥
-    '4': 쌦
-    '5': 쌧
+    '3': ''
+    '4': ''
+    '5': ''
   hat:
-    title: '&f&f쌃'
+    title: '&8ʜᴀᴛs ᴄᴏsᴍᴇᴛɪᴄ'
     size: 6
     type: HAT
     start-slot: 19
-    end-slot: 43 #39
+    end-slot: 43
     pages-slot: -1
     back-button-slot: 46
     next-button-slot: 52
@@ -378,7 +365,7 @@ menus:
         type: OPEN_MENU
         menu: spray
   bag:
-    title: '&f쌃'
+    title: '&8ʙᴀᴄᴋᴘᴀᴄᴋ ᴄᴏsᴍᴇᴛɪᴄ'
     size: 6
     type: BAG
     start-slot: 19
@@ -418,7 +405,7 @@ menus:
         type: OPEN_MENU
         menu: spray
   wstick:
-    title: '&f쌃'
+    title: '&8ᴄᴀɴᴇs ᴄᴏsᴍᴇᴛɪᴄ'
     size: 6
     type: WALKING_STICK
     start-slot: 19
@@ -458,7 +445,7 @@ menus:
         type: OPEN_MENU
         menu: spray
   balloon:
-    title: '&f쌃'
+    title: '&8ʙᴀʟʟᴏᴏɴ ᴄᴏsᴍᴇᴛɪᴄ'
     size: 6
     type: BALLOON
     start-slot: 19
@@ -497,8 +484,8 @@ menus:
       action:
         type: OPEN_MENU
         menu: spray
-  spray: #in 1.8.0
-    title: '&f'
+  spray:
+    title: '&8sᴘʀᴀʏ ᴄᴏsᴍᴇᴛɪᴄ'
     size: 6
     type: SPRAY
     start-slot: 19
@@ -538,7 +525,7 @@ menus:
         type: OPEN_MENU
         menu: spray
   colored:
-    title: '&f '
+    title: '&8ᴘɪᴄᴋ ᴄᴏʟᴏʀ'
     size: 6
     type: COLORED
     start-slot: 37
@@ -550,7 +537,7 @@ menus:
     result-slot: 16
     unavailable-slots: 0,1,2,6,7,8,9,11,17,18,19,20,24,25,26,27,28,29,30,31,32,33,34,35,36,44
   free-colored:
-    title: '&f '
+    title: '&8ꜰʀᴇᴇ ᴄᴏʟᴏʀ'
     size: 6
     type: FREE_COLORED
     start-slot: 37
@@ -563,7 +550,7 @@ menus:
     unavailable-slots: 0,1,2,6,7,8,9,11,17,18,19,20,24,25,26,27,28,29,30,31,32,33,34,35,36,44
     contains-item: contain-item
   token:
-    title: '&f'
+    title: '&8ᴛᴏᴋᴇɴ ʀᴇᴅᴇᴇᴍ'
     size: 3
     type: TOKEN
     preview-slot: 11

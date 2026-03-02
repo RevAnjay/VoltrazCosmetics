@@ -141,13 +141,11 @@ public class SQLite extends SQL {
             plugin.getLogger().severe("Failed to save player information: " + throwable.getMessage());
         }finally {
             closeConnections(preparedStatement, connection, null);
-            if(close)
-                player.clearCosmeticsToSaveData();
         }
     }
 
     private CompletableFuture<Void> savePlayerInfoAsync(PlayerData player){
-        player.clearCosmeticsToSaveData();
+        // clearCosmeticsToSaveData() is already called by the listener before this method
         player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
         return checkInfoAsync(player.getUniqueId()).thenCompose(check -> CompletableFuture.runAsync(() -> {
             Connection connection = null;
@@ -320,6 +318,11 @@ public class SQLite extends SQL {
             }
             return false;
         });
+    }
+
+    @Override
+    public void close() {
+        hikariCP.close();
     }
 
     @Override

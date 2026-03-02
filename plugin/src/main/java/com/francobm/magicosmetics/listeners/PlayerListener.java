@@ -70,6 +70,7 @@ public class PlayerListener implements Listener {
     public void onQuit(PlayerQuitEvent event){
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayer(player);
+        if(playerData == null) return;
         /*if(plugin.isHuskSync()){
             plugin.getHuskSync().saveDataToPlayer(playerData);
             return;
@@ -78,6 +79,9 @@ public class PlayerListener implements Listener {
         if(playerData.isZone()){
             playerData.exitZoneSync();
         }
+        // Restore saved helmet/offhand items before server saves player data
+        // This prevents the cosmetic item from being saved as the player's helmet
+        playerData.clearCosmeticsToSaveData();
         plugin.getSql().savePlayerAsync(playerData);
     }
 
@@ -85,6 +89,7 @@ public class PlayerListener implements Listener {
     public void onTeleport(PlayerTeleportEvent event){
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayer(player);
+        if(playerData == null) return;
         if(playerData.isZone()){
             if(!playerData.isSpectator()) return;
             event.setCancelled(true);
@@ -115,6 +120,7 @@ public class PlayerListener implements Listener {
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayer(player);
+        if(playerData == null) return;
         playerData.activeCosmeticsInventory();
     }
 
@@ -122,6 +128,7 @@ public class PlayerListener implements Listener {
     public void onDrop(PlayerDropItemEvent event){
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayer(player);
+        if(playerData == null) return;
         if(playerData.getSpray() != null) {
             if (plugin.getSprayKey() == null) return;
             if (!plugin.getSprayKey().isKey(SprayKeys.SHIFT_Q)) return;
@@ -149,7 +156,16 @@ public class PlayerListener implements Listener {
         PlayerData playerData = PlayerData.getPlayer(player);
         if(playerData == null) return;
         playerData.clearCosmeticsInUse(false);
-        if(event.getKeepInventory()) return;
+        if(event.getKeepInventory()) {
+            // keepInventory: restore original helmet/offhand so they aren't lost
+            if(playerData.getHat() != null) {
+                playerData.getHat().clearClose();
+            }
+            if(playerData.getWStick() != null) {
+                playerData.getWStick().clearClose();
+            }
+            return;
+        }
         Iterator<ItemStack> stackList = event.getDrops().iterator();
         while (stackList.hasNext()){
             ItemStack itemStack = stackList.next();

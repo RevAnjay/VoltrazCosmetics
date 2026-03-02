@@ -50,11 +50,11 @@ public class WStick extends Cosmetic implements CosmeticInventory {
 
     @Override
     public void update() {
-        if(lendEntity != null){
-            lendToEntity();
+        if(isHideCosmetic()) {
             return;
         }
-        if(isHideCosmetic()) {
+        if(lendEntity != null){
+            lendToEntity();
             return;
         }
         if(!overlaps) {
@@ -64,11 +64,11 @@ public class WStick extends Cosmetic implements CosmeticInventory {
                 return;
             }
             if(itemStack.getType().isAir() || isCosmetic(itemStack)) {
-                //Equip Helmet Without combined.
+                //Equip offhand Without combined.
                 player.getInventory().setItemInOffHand(getItemPlaceholders(player));
                 return;
             }
-            currentItemSaved = itemStack;
+            // Player has a non-cosmetic item in off-hand, don't equip cosmetic
             return;
         }
         //Equip offhand combined with offhand item saved in cache
@@ -258,8 +258,12 @@ public class WStick extends Cosmetic implements CosmeticInventory {
     @Override
     public void clearClose() {
         if(!overlaps) {
-            if(currentItemSaved == null)
+            if(currentItemSaved == null) {
                 player.getInventory().setItemInOffHand(null);
+            } else {
+                player.getInventory().setItemInOffHand(currentItemSaved.clone());
+                currentItemSaved = null;
+            }
             return;
         }
         if(currentItemSaved != null){
