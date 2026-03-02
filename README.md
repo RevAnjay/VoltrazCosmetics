@@ -1,25 +1,27 @@
 # 🎩 CosmicWardrobe (MagicCosmetics Fork)
 
-Plugin kosmetik untuk server Minecraft yang memungkinkan pemain mengenakan item kosmetik seperti **topi**, **tas ransel**, **tongkat jalan**, **balon**, dan **spray**.
+A cosmetic plugin for Minecraft servers that allows players to wear cosmetic items such as **hats**, **backpacks**, **walking sticks**, **balloons**, and **sprays**.
 
-## ✨ Fitur
+> 📖 [Baca dalam Bahasa Indonesia](README.id.md)
 
-- **Hat** — Kosmetik helmet dengan mode overlay (combined) dan non-overlay
-- **Walking Stick** — Kosmetik off-hand dengan support item combining
-- **Backpack** — Tas ransel yang tampil di punggung pemain
-- **Balloon** — Balon yang melayang di atas pemain
-- **Spray** — Spray paint yang bisa ditempel di dinding
-- **Zone System** — Area khusus wardrobe untuk preview kosmetik
-- **NPC Support** — Kosmetik bisa dipasang pada NPC (Citizens)
-- **Token System** — Sistem mata uang untuk unlock kosmetik
-- **Color Customization** — Pewarnaan kosmetik dengan color picker
+## ✨ Features
 
-## 📋 Persyaratan
+- **Hat** — Helmet cosmetics with overlay (combined) and non-overlay modes
+- **Walking Stick** — Off-hand cosmetics with item combining support
+- **Backpack** — Backpacks displayed on the player's back
+- **Balloon** — Balloons floating above the player
+- **Spray** — Spray paint that can be placed on walls
+- **Zone System** — Dedicated wardrobe areas for cosmetic preview
+- **NPC Support** — Cosmetics can be applied to NPCs (Citizens)
+- **Token System** — Currency system for unlocking cosmetics
+- **Color Customization** — Cosmetic coloring with a color picker
+
+## 📋 Requirements
 
 - **Java** 8+
 - **Minecraft** 1.17 — 1.21.5
 - **Server** Paper / Spigot
-- **Maven** 3.6+ (untuk build)
+- **Maven** 3.6+ (for building)
 
 ## 🔧 Build
 
@@ -29,23 +31,23 @@ mvn clean package -pl plugin -am
 
 Output JAR: `plugin/target/MagicCosmetics-3.1.1.jar`
 
-## 📦 Modul Proyek
+## 📦 Project Modules
 
-| Modul | Deskripsi |
-|-------|-----------|
-| `api` | API publik & class dasar (`Cosmetic`, `CosmeticType`) |
-| `plugin` | Plugin utama, listener, database, cache |
-| `v1_18_R1` — `v1_21_R4` | NMS adapter per versi Minecraft |
-| `meg3_support` / `meg4_support` | Integrasi ModelEngine |
+| Module | Description |
+|--------|-------------|
+| `api` | Public API & base classes (`Cosmetic`, `CosmeticType`) |
+| `plugin` | Main plugin, listeners, database, cache |
+| `v1_18_R1` — `v1_21_R4` | NMS adapters per Minecraft version |
+| `meg3_support` / `meg4_support` | ModelEngine integration |
 | `bungeecord` / `velocity` | Proxy support |
 
-## 🔌 Integrasi Plugin (Soft Dependencies)
+## 🔌 Plugin Integrations (Soft Dependencies)
 
-| Plugin | Fungsi |
-|--------|--------|
+| Plugin | Purpose |
+|--------|---------|
 | LuckPerms | Permission-based cosmetics |
 | ItemsAdder / Nexo | Custom resource pack items |
-| ModelEngine | Model 3D pada kosmetik |
+| ModelEngine | 3D models for cosmetics |
 | PlaceholderAPI | Placeholder support |
 | Citizens | NPC cosmetics |
 | HuskSync | Cross-server sync |
@@ -54,9 +56,9 @@ Output JAR: `plugin/target/MagicCosmetics-3.1.1.jar`
 
 ## 💾 Database
 
-Mendukung **SQLite** (default) dan **MySQL**. Menggunakan HikariCP connection pool.
+Supports **SQLite** (default) and **MySQL**. Uses HikariCP connection pooling.
 
-Konfigurasi MySQL di `config.yml`:
+MySQL configuration in `config.yml`:
 ```yaml
 MySQL:
   enabled: true
@@ -69,13 +71,13 @@ MySQL:
   options: "useSSL=false"
 ```
 
-## 🎮 Perintah
+## 🎮 Commands
 
-| Perintah | Alias |
-|----------|-------|
+| Command | Aliases |
+|---------|---------|
 | `/magicosmetics` | `/cosmetics`, `/mcosmetics`, `/magiccos` |
 
-## 📁 Struktur Kode
+## 📁 Code Structure
 
 ```
 plugin/src/main/java/com/francobm/magicosmetics/
@@ -94,20 +96,20 @@ plugin/src/main/java/com/francobm/magicosmetics/
 └── utils/                    # Utilities
 ```
 
-## 📝 Changelog Terbaru
+## 📝 Recent Changelog
 
 ### v3.1.1
-- **Fix:** Helmet tidak hilang lagi saat player disconnect/quit dengan kosmetik aktif
-- **Fix:** Helmet tidak hilang saat death dengan `keepInventory: true`
-- **Fix:** Walking stick tidak lagi menggantikan item di off-hand
-- **Fix:** `clearClose()` sekarang me-restore item tersimpan di mode non-overlaps
-- **Fix:** Menghapus double `clearCosmeticsToSaveData()` yang membatalkan restorasi item
-- **Fix:** `PlayerData.players` menggunakan `ConcurrentHashMap` untuk thread safety
-- **Fix:** `EntityCache.entities` menggunakan `ConcurrentHashMap` untuk thread safety
-- **Fix:** Typo di `EntityCache.activeWStick()` yang menggunakan `hat` bukan `wStick`
-- **Fix:** HikariCP connection pool sekarang di-close saat plugin disable
-- **Fix:** Null check pada `PlayerData.getPlayer()` di semua event handler
+- **Fix:** Helmets no longer disappear when a player disconnects/quits with active cosmetics
+- **Fix:** Helmets no longer disappear on death with `keepInventory: true`
+- **Fix:** Walking stick no longer replaces items in the off-hand
+- **Fix:** `clearClose()` now restores saved items in non-overlaps mode
+- **Fix:** Removed duplicate `clearCosmeticsToSaveData()` that was reverting item restoration
+- **Fix:** `PlayerData.players` now uses `ConcurrentHashMap` for thread safety
+- **Fix:** `EntityCache.entities` now uses `ConcurrentHashMap` for thread safety
+- **Fix:** Typo in `EntityCache.activeWStick()` that used `hat` instead of `wStick`
+- **Fix:** HikariCP connection pool is now properly closed on plugin disable
+- **Fix:** Added null checks for `PlayerData.getPlayer()` in all event handlers
 
-## 📄 Lisensi
+## 📄 License
 
-Plugin ini dibuat oleh **FrancoBM**. Fork ini dikelola untuk kebutuhan server **Voltraz**.
+This plugin was originally created by **FrancoBM**. This fork is maintained for the **Voltraz** server.
