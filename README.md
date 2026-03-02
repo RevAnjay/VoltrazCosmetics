@@ -1,4 +1,4 @@
-# 🎩 CosmicWardrobe (MagicCosmetics Fork)
+# 🎩 VoltrazCosmetics (MagicCosmetics Fork)
 
 A cosmetic plugin for Minecraft servers that allows players to wear cosmetic items such as **hats**, **backpacks**, **walking sticks**, **balloons**, and **sprays**.
 

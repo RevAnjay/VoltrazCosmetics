@@ -1,4 +1,4 @@
-# 🎩 CosmicWardrobe (MagicCosmetics Fork)
+# 🎩 VoltrazCosmetics (MagicCosmetics Fork)
 
 Plugin kosmetik untuk server Minecraft yang memungkinkan pemain mengenakan item kosmetik seperti **topi**, **tas ransel**, **tongkat jalan**, **balon**, dan **spray**.
 
