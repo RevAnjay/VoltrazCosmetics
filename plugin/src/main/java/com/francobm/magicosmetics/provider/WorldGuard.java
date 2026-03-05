@@ -9,6 +9,7 @@ import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,6 +18,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 public class WorldGuard implements Listener {
     private final MagicCosmetics plugin;
     private StateFlag customFlag;
+    private RegionQuery cachedQuery;
 
     public WorldGuard(MagicCosmetics plugin){
         registerFlag();
@@ -45,13 +47,29 @@ public class WorldGuard implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event){
+        // Skip if player hasn't moved to a new block (regions are block-based)
+        org.bukkit.Location to = event.getTo();
+        if(to == null) return;
+        org.bukkit.Location from = event.getFrom();
+        if(from.getWorld() == to.getWorld()
+            && from.getBlockX() == to.getBlockX()
+            && from.getBlockY() == to.getBlockY()
+            && from.getBlockZ() == to.getBlockZ()) {
+            return;
+        }
+
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayer(player);
         if(playerData.isHasInBlackList()) return;
-        org.bukkit.Location to = event.getTo();
-        if(to == null) return;
+
+        // Cache the RegionQuery to avoid creating a new instance every call
+        if(cachedQuery == null) {
+            cachedQuery = com.sk89q.worldguard.WorldGuard.getInstance()
+                .getPlatform().getRegionContainer().createQuery();
+        }
+
         Location location = BukkitAdapter.adapt(to);
-        ApplicableRegionSet applicableRegionSet = com.sk89q.worldguard.WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery().getApplicableRegions(location);
+        ApplicableRegionSet applicableRegionSet = cachedQuery.getApplicableRegions(location);
         StateFlag.State flagState = applicableRegionSet.queryState(null, customFlag);
         if(flagState == null || flagState.equals(StateFlag.State.DENY)){
             playerData.hideAllCosmetics();

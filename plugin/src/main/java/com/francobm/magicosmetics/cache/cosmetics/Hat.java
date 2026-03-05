@@ -244,8 +244,12 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     @Override
     public void remove() {
         if(!overlaps) {
-            if(currentItemSaved == null)
+            if(currentItemSaved == null) {
                 player.getInventory().setHelmet(null);
+            } else {
+                player.getInventory().setHelmet(currentItemSaved.clone());
+                currentItemSaved = null;
+            }
             return;
         }
         if(currentItemSaved != null){

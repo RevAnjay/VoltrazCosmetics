@@ -23,7 +23,11 @@ import java.util.UUID;
 
 public abstract class Version {
     protected static final UUID RANDOM_UUID = UUID.fromString("92864445-51c5-4c3b-9039-517c9927d1b4");
+    protected static boolean debug = false;
 
+    public static void setDebug(boolean debug) {
+        Version.debug = debug;
+    }
 
     protected PacketReader packetReader;
 

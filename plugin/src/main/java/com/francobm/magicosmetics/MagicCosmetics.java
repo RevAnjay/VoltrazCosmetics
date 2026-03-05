@@ -313,6 +313,7 @@ public final class MagicCosmetics extends JavaPlugin {
         if(config.contains("worlds-blacklist"))
             worldsBlacklist = config.getStringListWF("worlds-blacklist");
         balloonRotation = config.getDouble("balloons-rotation");
+        com.francobm.magicosmetics.nms.version.Version.setDebug(config.getBoolean("debug", false));
         ZoneAction onEnter = null;
         ZoneAction onExit = null;
         if(zoneActions != null) {
@@ -349,9 +350,9 @@ public final class MagicCosmetics extends JavaPlugin {
         if(worldGuard != null){
             getServer().getPluginManager().registerEvents(worldGuard, this);
         }
-        if(getServer().getPluginManager().isPluginEnabled("Multiverse-Core")){
-            getServer().getPluginManager().registerEvents(new MultiverseCListener(), this);
-        }
+        // MultiverseCListener removed: PlayerListener.onTeleport(PlayerTeleportEvent)
+        // already handles zone spectator cancellation and cosmetic clearing for all teleports.
+        // MVTeleportEvent no longer exists in MultiverseCore 5.x
         zoneActionsListener();
         if(isProxy()){
             getServer().getMessenger().registerIncomingPluginChannel(this, "mc:player", new ProxyListener());

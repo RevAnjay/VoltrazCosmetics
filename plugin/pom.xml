@@ -269,12 +269,8 @@
             <version>4.11.0</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.onarandombox.multiversecore</groupId>
-            <artifactId>Multiverse-Core</artifactId>
-            <version>4.3.1</version>
-            <scope>provided</scope>
-        </dependency>
+        <!-- MultiverseCore dependency removed: MVTeleportEvent no longer exists in MV5,
+             and PlayerListener.onTeleport handles all teleport events via Bukkit API -->
         <dependency>
             <groupId>com.onarandombox.multiverseinventories</groupId> <!-- Don't forget to replace this -->
             <artifactId>Multiverse-Inventories</artifactId> <!-- Replace this as well -->

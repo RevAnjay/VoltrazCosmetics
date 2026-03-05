@@ -1,4 +1,5 @@
 license: ''
+debug: false
 balloons-rotation: 25
 npc-rotation: 3
 equip-message: true

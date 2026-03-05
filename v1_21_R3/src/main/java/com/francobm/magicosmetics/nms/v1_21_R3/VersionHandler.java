@@ -286,14 +286,14 @@ public class VersionHandler extends Version {
         CompoundTag copyNBT = copyCustomData.copyTag();
         CompoundTag cosmeticNBT = cosmeticCustomData.copyTag();
         for(String key : copyNBT.getAllKeys()){
-            Bukkit.getLogger().info("Key: " + key);
+            if(debug) Bukkit.getLogger().info("Key: " + key);
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
                 CompoundTag compound = copyNBT.getCompound(key);
                 CompoundTag realCompound = cosmeticNBT.getCompound(key);
                 Set<String> keys = compound.getAllKeys();
                 for (String compoundKey : keys){
-                    Bukkit.getLogger().info("Key of key: " + compoundKey);
+                    if(debug) Bukkit.getLogger().info("Key of key: " + compoundKey);
                     realCompound.put(compoundKey, compound.get(compoundKey));
                 }
                 cosmeticNBT.put(key, realCompound);
