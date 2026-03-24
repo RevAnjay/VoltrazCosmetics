@@ -1,4 +1,4 @@
-package com.francobm.magicosmetics.nms.v1_21_R4.models;
+package com.francobm.magicosmetics.nms.v1_21_R5.models;
 
 import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.api.CosmeticType;
@@ -21,24 +21,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_21_R4.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
 public class MCChannelHandler extends ChannelDuplexHandler {
-
-    private static Method entityGetter;
-
-    static {
-        for(Method method : ServerLevel.class.getMethods()) {
-            if(LevelEntityGetter.class.isAssignableFrom(method.getReturnType()) && method.getReturnType() != LevelEntityGetter.class) {
-                entityGetter = method;
-                break;
-            }
-        }
-    }
 
     private final ServerPlayer player;
 
@@ -127,7 +116,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     private ClientboundSetPassengersPacket handleEntityMount(ClientboundSetPassengersPacket packetPlayOutMount) {
         int id = packetPlayOutMount.getVehicle();
         int[] ids = packetPlayOutMount.getPassengers();
-        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.getServerLevel(), id);
         if(!(entity instanceof Player)) return packetPlayOutMount;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -148,7 +137,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private void handleEntitySpawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.getServerLevel(), id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -161,7 +150,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private void handleEntityDespawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(this.getServerLevel(), id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -173,17 +162,12 @@ public class MCChannelHandler extends ChannelDuplexHandler {
         });
     }
 
-    protected org.bukkit.entity.Entity getEntityAsync(int id) {
+    protected org.bukkit.entity.Entity getEntityAsync(ServerLevel world, int id) {
         return EntityIdCache.getPlayer(id);
     }
 
-    public static LevelEntityGetter<Entity> getEntityGetter(ServerLevel level) {
-        if(entityGetter == null)
-            return level.getEntities();
-        try {
-            return (LevelEntityGetter<net.minecraft.world.entity.Entity>) entityGetter.invoke(level);
-        }catch (Throwable ignored) {
-            return null;
-        }
+    private ServerLevel getServerLevel() {
+        return ((org.bukkit.craftbukkit.CraftWorld) this.player.getBukkitEntity().getWorld()).getHandle();
     }
 }
+

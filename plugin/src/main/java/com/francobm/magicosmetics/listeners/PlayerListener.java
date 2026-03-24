@@ -5,6 +5,7 @@ import com.francobm.magicosmetics.api.Cosmetic;
 import com.francobm.magicosmetics.api.CosmeticType;
 import com.francobm.magicosmetics.api.SprayKeys;
 import com.francobm.magicosmetics.cache.*;
+import com.francobm.magicosmetics.cache.EntityIdCache;
 import com.francobm.magicosmetics.cache.cosmetics.CosmeticInventory;
 import com.francobm.magicosmetics.events.CosmeticInventoryUpdateEvent;
 import com.francobm.magicosmetics.events.PlayerChangeBlacklistEvent;
@@ -41,6 +42,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event){
         Player player = event.getPlayer();
+        EntityIdCache.register(player);
         plugin.getVersion().getPacketReader().injectPlayer(player);
         if(plugin.isHuskSync() || plugin.isMpdb()){
             return;
@@ -69,6 +71,7 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerQuitEvent event){
         Player player = event.getPlayer();
+        EntityIdCache.unregister(player);
         PlayerData playerData = PlayerData.getPlayer(player);
         if(playerData == null) return;
         /*if(plugin.isHuskSync()){
@@ -121,6 +124,7 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayer(player);
         if(playerData == null) return;
+        playerData.clearDeathBackup();
         playerData.activeCosmeticsInventory();
     }
 
@@ -157,36 +161,53 @@ public class PlayerListener implements Listener {
         if(playerData == null) return;
         playerData.clearCosmeticsInUse(false);
         if(event.getKeepInventory()) {
-            // keepInventory: restore original helmet/offhand so they aren't lost
             if(playerData.getHat() != null) {
+                playerData.setDeathBackupHelmet(playerData.getHat().getCurrentItemSaved());
                 playerData.getHat().clearClose();
             }
             if(playerData.getWStick() != null) {
+                playerData.setDeathBackupWStick(playerData.getWStick().getCurrentItemSaved());
                 playerData.getWStick().clearClose();
             }
             return;
         }
+
+        ItemStack savedHelmet = null;
+        ItemStack savedWStick = null;
+        if(playerData.getHat() != null) {
+            savedHelmet = playerData.getHat().getSavedItemForDeath();
+        }
+        if(playerData.getWStick() != null) {
+            savedWStick = playerData.getWStick().getSavedItemForDeath();
+        }
+
+        boolean removedHelmetDupe = false;
+        boolean removedWStickDupe = false;
         Iterator<ItemStack> stackList = event.getDrops().iterator();
         while (stackList.hasNext()){
             ItemStack itemStack = stackList.next();
-            if(itemStack == null) break;
+            if(itemStack == null) continue;
             if(playerData.getHat() != null && playerData.getHat().isCosmetic(itemStack)){
                 stackList.remove();
                 continue;
             }
             if(playerData.getWStick() != null && playerData.getWStick().isCosmetic(itemStack)){
                 stackList.remove();
+                continue;
+            }
+            if(!removedHelmetDupe && savedHelmet != null && itemStack.isSimilar(savedHelmet)){
+                stackList.remove();
+                removedHelmetDupe = true;
+                continue;
+            }
+            if(!removedWStickDupe && savedWStick != null && itemStack.isSimilar(savedWStick)){
+                stackList.remove();
+                removedWStickDupe = true;
             }
         }
-        if(playerData.getHat() != null && playerData.getHat().getCurrentItemSaved() != null){
-            if(!event.getKeepInventory() && playerData.getHat().isOverlaps())
-                event.getDrops().add(playerData.getHat().leftItemAndGet());
-        }
 
-        if(playerData.getWStick() != null && playerData.getWStick().getCurrentItemSaved() != null){
-            if(!event.getKeepInventory() && playerData.getWStick().isOverlaps())
-                event.getDrops().add(playerData.getWStick().leftItemAndGet());
-        }
+        if(savedHelmet != null) event.getDrops().add(savedHelmet);
+        if(savedWStick != null) event.getDrops().add(savedWStick);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -262,17 +283,26 @@ public class PlayerListener implements Listener {
                 }
                 return;
             }
-            if(itemStack.getType().toString().toUpperCase().endsWith("HELMET")){
+            if(itemStack.getType().toString().toUpperCase().endsWith("HELMET") || itemStack.getType().toString().toUpperCase().endsWith("HEAD") || itemStack.getType().toString().toUpperCase().contains("SKULL") || itemStack.getType().toString().toUpperCase().equals("CARVED_PUMPKIN")){
                 if(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                     if (playerData.getHat() != null) {
                         if(playerData.getHat().isHideCosmetic()) return;
                         event.setCancelled(true);
+                        event.setUseItemInHand(Event.Result.DENY);
                         ItemStack returnItem = playerData.getHat().changeItem(itemStack);
                         if(event.getHand() == EquipmentSlot.OFF_HAND){
                             player.getInventory().setItemInOffHand(returnItem);
                         }else{
                             player.getInventory().setItemInMainHand(returnItem);
                         }
+                        // Delayed inventory update to prevent vanilla armor equip bypassing cancellation (1.21.8+)
+                        final ItemStack savedHelmet = playerData.getHat().getCurrentItemSaved();
+                        plugin.getServer().getScheduler().runTask(plugin, () -> {
+                            PlayerData pd = PlayerData.getPlayer(player);
+                            if(pd == null || pd.getHat() == null) return;
+                            pd.getHat().update();
+                            player.updateInventory();
+                        });
                     }
                 }
             }

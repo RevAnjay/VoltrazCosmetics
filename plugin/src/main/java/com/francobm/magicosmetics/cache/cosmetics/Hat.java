@@ -267,6 +267,21 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     }
 
     @Override
+    public ItemStack getSavedItemForDeath() {
+        if(currentItemSaved == null) return null;
+        ItemStack result;
+        if(overlaps && combinedItem != null) {
+            result = MagicCosmetics.getInstance().getVersion()
+                    .getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved);
+        } else {
+            result = currentItemSaved;
+        }
+        currentItemSaved = null;
+        combinedItem = null;
+        return result;
+    }
+
+    @Override
     public void clearClose() {
         if(!overlaps) {
             if(currentItemSaved == null) {

@@ -3,6 +3,7 @@ package com.francobm.magicosmetics;
 import com.francobm.magicosmetics.api.Cosmetic;
 import com.francobm.magicosmetics.api.SprayKeys;
 import com.francobm.magicosmetics.cache.*;
+import com.francobm.magicosmetics.cache.EntityIdCache;
 import com.francobm.magicosmetics.cache.inventories.Menu;
 import com.francobm.magicosmetics.cache.items.Items;
 import com.francobm.magicosmetics.commands.Command;
@@ -16,7 +17,6 @@ import com.francobm.magicosmetics.loaders.NPCsLoader;
 import com.francobm.magicosmetics.managers.CosmeticsManager;
 import com.francobm.magicosmetics.managers.ZonesManager;
 import com.francobm.magicosmetics.nms.version.Version;
-import com.francobm.magicosmetics.nms.v1_17_R1.VersionHandler;
 import com.francobm.magicosmetics.provider.*;
 import com.francobm.magicosmetics.provider.citizens.Citizens;
 import com.francobm.magicosmetics.provider.husksync.HuskSync;
@@ -108,14 +108,6 @@ public final class MagicCosmetics extends JavaPlugin {
         // Plugin startup logic
         instance = this;
         switch (Utils.getVersion()){
-            case "1.17":
-            case "1.17.1":
-                version = new VersionHandler();
-                break;
-            case "1.18":
-            case "1.18.1":
-                version = new com.francobm.magicosmetics.nms.v1_18_R1.VersionHandler();
-                break;
             case "1.21":
             case "1.21.1":
                 version = new com.francobm.magicosmetics.nms.v1_21_R1.VersionHandler();
@@ -129,6 +121,11 @@ public final class MagicCosmetics extends JavaPlugin {
                 break;
             case "1.21.5":
                 version = new com.francobm.magicosmetics.nms.v1_21_R4.VersionHandler();
+                break;
+            case "1.21.6":
+            case "1.21.7":
+            case "1.21.8":
+                version = new com.francobm.magicosmetics.nms.v1_21_R5.VersionHandler();
                 break;
         }
         //checkIfProxy();
@@ -222,6 +219,7 @@ public final class MagicCosmetics extends JavaPlugin {
         registerListeners();
         for(Player player : Bukkit.getOnlinePlayers()){
             if(player == null || !player.isOnline()) continue;
+            EntityIdCache.register(player);
             sql.loadPlayerAsync(player);
         }
     }

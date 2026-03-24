@@ -1,7 +1,7 @@
 name: MagicCosmetics
 version: '${project.version}'
 main: com.francobm.magicosmetics.MagicCosmetics
-api-version: 1.16
+api-version: '1.21'
 softdepend:
   - LuckPerms
   - Multiverse-Core
@@ -18,7 +18,7 @@ softdepend:
   - HuskSync
   - MysqlPlayerDataBridge
   - Nexo
-authors: [FrancoBM]
+authors: [RevelX, FrancoBM]
 description: magic cosmetics for this server.
 website: FrancoBM#2980
 super: '%%__USER__%%'

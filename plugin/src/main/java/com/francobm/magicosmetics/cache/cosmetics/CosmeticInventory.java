@@ -19,4 +19,6 @@ public interface CosmeticInventory {
     ItemStack getEquipment();
 
     void forceRemove();
+
+    ItemStack getSavedItemForDeath();
 }

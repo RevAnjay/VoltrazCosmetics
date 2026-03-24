@@ -294,6 +294,7 @@ public class VersionHandler extends Version {
                 Set<String> keys = compound.getAllKeys();
                 for (String compoundKey : keys){
                     if(debug) Bukkit.getLogger().info("Key of key: " + compoundKey);
+                    if(compoundKey.contains("magicosmetics") || compoundKey.contains("cosmetic")) continue;
                     realCompound.put(compoundKey, compound.get(compoundKey));
                 }
                 cosmeticNBT.put(key, realCompound);

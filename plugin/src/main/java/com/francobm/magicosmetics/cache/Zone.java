@@ -289,11 +289,11 @@ public class Zone {
         return MagicCosmetics.getInstance().getVersion().setNBTCosmetic(itemStack, "wand" + getName());
     }
 
-    public boolean isInZone(Block block){
+    public boolean isInZone(Location location){
         if(!active){
             return false;
         }
-        return detectBlock(block, cuboid);
+        return detectLocation(location, cuboid);
     }
 
     public Location getBalloon() {
@@ -304,8 +304,8 @@ public class Zone {
         this.balloon = balloon;
     }
 
-    private boolean detectBlock(Block blockLocation, Cuboid cuboid){
-        return cuboid.contains(blockLocation);
+    private boolean detectLocation(Location location, Cuboid cuboid){
+        return cuboid.contains(location);
     }
 
     public String getName() {

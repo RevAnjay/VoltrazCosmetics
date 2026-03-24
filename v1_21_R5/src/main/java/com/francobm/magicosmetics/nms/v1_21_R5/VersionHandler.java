@@ -1,4 +1,4 @@
-package com.francobm.magicosmetics.nms.v1_21_R3;
+package com.francobm.magicosmetics.nms.v1_21_R5;
 
 import com.francobm.magicosmetics.nms.IRangeManager;
 import com.francobm.magicosmetics.nms.NPC.ItemSlot;
@@ -8,8 +8,8 @@ import com.francobm.magicosmetics.nms.bag.PlayerBag;
 import com.francobm.magicosmetics.nms.balloon.EntityBalloon;
 import com.francobm.magicosmetics.nms.balloon.PlayerBalloon;
 import com.francobm.magicosmetics.nms.spray.CustomSpray;
-import com.francobm.magicosmetics.nms.v1_21_R3.cache.*;
-import com.francobm.magicosmetics.nms.v1_21_R3.models.PacketReaderHandler;
+import com.francobm.magicosmetics.nms.v1_21_R5.cache.*;
+import com.francobm.magicosmetics.nms.v1_21_R5.models.PacketReaderHandler;
 import com.francobm.magicosmetics.nms.version.Version;
 import com.google.common.collect.Lists;
 import com.mojang.datafixers.util.Pair;
@@ -23,8 +23,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.PositionMoveRotation;
-import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.animal.Pufferfish;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.inventory.MenuType;
@@ -34,13 +32,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_21_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_21_R3.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_21_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R3.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R3.util.CraftChatMessage;
-import org.bukkit.craftbukkit.v1_21_R3.util.CraftLocation;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.craftbukkit.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.util.CraftChatMessage;
+import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.*;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
@@ -70,7 +68,7 @@ public class VersionHandler extends Version {
             Field packetField = packet.getClass().getDeclaredField("entries");
             packetField.setAccessible(true);
             ArrayList<ClientboundPlayerInfoUpdatePacket.Entry> list = Lists.newArrayList();
-            list.add(new ClientboundPlayerInfoUpdatePacket.Entry(player.getUniqueId(), p.getBukkitEntity().getProfile(),false, 0, GameType.ADVENTURE, p.getTabListDisplayName(), true, 0, null));
+            list.add(ReflectionUtils.createPlayerInfoEntry(player.getUniqueId(), p.getBukkitEntity().getProfile(),false, 0, GameType.ADVENTURE, p.getTabListDisplayName()));
             packetField.set(packet, list);
             p.connection.send(packet);
             ClientboundGameEventPacket gameEventPacket = new ClientboundGameEventPacket(ClientboundGameEventPacket.CHANGE_GAME_MODE, 3f);
@@ -113,7 +111,7 @@ public class VersionHandler extends Version {
     }
 
     public PlayerBag createPlayerBag(Player player, double distance, float height, ItemStack backPackItem, ItemStack backPackItemForMe, boolean isDisplay) {
-        return new PlayerBagHandler(player, createRangeManager(player), distance, height, backPackItem, backPackItemForMe);
+        return isDisplay ? new PlayerBagDisplayHandler(player, createRangeManager(player), distance, height, backPackItem, backPackItemForMe) : new PlayerBagHandler(player, createRangeManager(player), distance, height, backPackItem, backPackItemForMe);
     }
 
     @Override
@@ -216,19 +214,19 @@ public class VersionHandler extends Version {
         net.minecraft.world.item.ItemStack itemCosmetic = CraftItemStack.asNMSCopy(itemStack);
         if(!itemCosmetic.has(DataComponents.CUSTOM_DATA)) return "";
         CustomData customData = itemCosmetic.get(DataComponents.CUSTOM_DATA);
-        return customData.copyTag().getString("magic_cosmetic");
+        return ReflectionUtils.getString(customData.copyTag(), "magic_cosmetic");
     }
 
     public PufferFish spawnFakePuffer(Location location) {
         Pufferfish entityPufferFish = new Pufferfish(EntityType.PUFFERFISH, ((CraftWorld)location.getWorld()).getHandle());
-        entityPufferFish.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        ReflectionUtils.absMoveTo(entityPufferFish, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (PufferFish) entityPufferFish.getBukkitEntity();
     }
 
     @Override
     public org.bukkit.entity.ArmorStand spawnArmorStand(Location location) {
         ArmorStand armorStand = new ArmorStand(EntityType.ARMOR_STAND, ((CraftWorld)location.getWorld()).getHandle());
-        armorStand.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        ReflectionUtils.absMoveTo(armorStand, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (org.bukkit.entity.ArmorStand) armorStand.getBukkitEntity();
     }
 
@@ -264,12 +262,12 @@ public class VersionHandler extends Version {
 
     public void updatePositionFakeEntity(Entity leashed, Location location) {
         net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
-        entity.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+        ReflectionUtils.absMoveTo(entity, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
     }
 
     public void teleportFakeEntity(Entity leashed, Set<Player> viewers) {
         net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
-        ClientboundTeleportEntityPacket packet = new ClientboundTeleportEntityPacket(entity.getId(), PositionMoveRotation.of(entity), Relative.ALL, false);
+        ClientboundTeleportEntityPacket packet = ReflectionUtils.createTeleportPacket(entity);
         for(Player viewer : viewers) {
             ServerPlayer view = ((CraftPlayer)viewer).getHandle();
             view.connection.send(packet);
@@ -280,18 +278,19 @@ public class VersionHandler extends Version {
     public ItemStack getItemWithNBTsCopy(ItemStack itemToCopy, ItemStack cosmetic) {
         net.minecraft.world.item.ItemStack copy = CraftItemStack.asNMSCopy(itemToCopy);
         if(!copy.has(DataComponents.CUSTOM_DATA)) return cosmetic;
+        boolean debug = false;
         net.minecraft.world.item.ItemStack cosmeticItem = CraftItemStack.asNMSCopy(cosmetic);
         CustomData copyCustomData = copy.get(DataComponents.CUSTOM_DATA);
         CustomData cosmeticCustomData = cosmeticItem.get(DataComponents.CUSTOM_DATA);
         CompoundTag copyNBT = copyCustomData.copyTag();
         CompoundTag cosmeticNBT = cosmeticCustomData.copyTag();
-        for(String key : copyNBT.getAllKeys()){
+        for(String key : ReflectionUtils.getKeys(copyNBT)){
             if(debug) Bukkit.getLogger().info("Key: " + key);
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
-                CompoundTag compound = copyNBT.getCompound(key);
-                CompoundTag realCompound = cosmeticNBT.getCompound(key);
-                Set<String> keys = compound.getAllKeys();
+                CompoundTag compound = ReflectionUtils.getCompound(copyNBT, key);
+                CompoundTag realCompound = ReflectionUtils.getCompound(cosmeticNBT, key);
+                Set<String> keys = ReflectionUtils.getKeys(compound);
                 for (String compoundKey : keys){
                     if(debug) Bukkit.getLogger().info("Key of key: " + compoundKey);
                     if(compoundKey.contains("magicosmetics") || compoundKey.contains("cosmetic")) continue;
@@ -315,12 +314,12 @@ public class VersionHandler extends Version {
         CustomData realCustomData = realItem.get(DataComponents.CUSTOM_DATA);
         CompoundTag copyNBT = copyCustomData.copyTag();
         CompoundTag realNBT = realCustomData.copyTag();
-        for(String key : copyNBT.getAllKeys()){
+        for(String key : ReflectionUtils.getKeys(copyNBT)){
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
             if(key.equals("PublicBukkitValues")) {
-                CompoundTag compound = copyNBT.getCompound(key);
-                CompoundTag realCompound = realNBT.getCompound(key);
-                Set<String> keys = compound.getAllKeys();
+                CompoundTag compound = ReflectionUtils.getCompound(copyNBT, key);
+                CompoundTag realCompound = ReflectionUtils.getCompound(realNBT, key);
+                Set<String> keys = ReflectionUtils.getKeys(compound);
                 for (String compoundKey : keys){
                     if(!realCompound.contains(compoundKey)) continue;
                     realCompound.put(compoundKey, compound.get(compoundKey));
@@ -382,3 +381,4 @@ public class VersionHandler extends Version {
         return new RangeManager(trackedEntity);
     }
 }
+

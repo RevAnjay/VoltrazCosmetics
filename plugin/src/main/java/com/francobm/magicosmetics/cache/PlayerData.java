@@ -54,6 +54,8 @@ public class PlayerData {
     private boolean hideCosmetics;
     private boolean hasInBlackList;
     private final IRangeManager rangeManager;
+    private ItemStack deathBackupHelmet;
+    private ItemStack deathBackupWStick;
 
     public PlayerData(UUID uniqueId, String name, IRangeManager rangeManager){
         this.uniqueId = uniqueId;
@@ -801,9 +803,11 @@ public class PlayerData {
 
     public void activeBag(){
         Player player = getOfflinePlayer().getPlayer();
-        if(player == null){
-            return;
-        }
+        if(player == null) return;
+        activeBag(player);
+    }
+
+    public void activeBag(Player player){
         if(bag == null){
             return;
         }
@@ -816,10 +820,19 @@ public class PlayerData {
                 return;
             }
         }
-        Material material = player.getLocation().getBlock().getType();
-        if(player.getPose() == Pose.SLEEPING || player.getPose() == Pose.SWIMMING || player.isGliding() || player.isInvisible() || player.hasPotionEffect(PotionEffectType.INVISIBILITY) || material  == Material.NETHER_PORTAL || material  == Material.END_PORTAL){
+        // Check pose/effects first (cheap checks) before block type (expensive - may trigger chunk load)
+        if(player.getPose() == Pose.SLEEPING || player.getPose() == Pose.SWIMMING || player.isGliding() || player.isInvisible() || player.hasPotionEffect(PotionEffectType.INVISIBILITY)){
             clearBag();
             return;
+        }
+        // Only check block type if the chunk is already loaded to avoid synchronous chunk loading
+        Location loc = player.getLocation();
+        if(loc.isChunkLoaded()) {
+            Material material = loc.getBlock().getType();
+            if(material == Material.NETHER_PORTAL || material == Material.END_PORTAL) {
+                clearBag();
+                return;
+            }
         }
         bag.update();
     }
@@ -992,9 +1005,21 @@ public class PlayerData {
         previewDraw();
     }
 
+    public boolean hasActiveCosmetics(){
+        return bag != null || balloon != null;
+    }
+
     public void activeCosmetics(){
         //activeHat();
         activeBag();
+        //activeWStick();
+        activePB();
+        //activeSpray();
+    }
+
+    public void activeCosmetics(Player player){
+        //activeHat();
+        activeBag(player);
         //activeWStick();
         activePB();
         //activeSpray();
@@ -1010,16 +1035,40 @@ public class PlayerData {
 
     public void clearCosmeticsToSaveData() {
         if(hat != null){
+            deathBackupHelmet = hat.getCurrentItemSaved() != null ? hat.getCurrentItemSaved().clone() : null;
             hat.clearClose();
         }
-        if(wStick != null)
+        if(wStick != null) {
+            deathBackupWStick = wStick.getCurrentItemSaved() != null ? wStick.getCurrentItemSaved().clone() : null;
             wStick.clearClose();
+        }
         if(balloon != null)
             balloon.clearClose();
         if(bag != null)
             bag.clearClose();
         if(spray != null)
             spray.clearClose();
+    }
+
+    public ItemStack getDeathBackupHelmet() {
+        return deathBackupHelmet;
+    }
+
+    public ItemStack getDeathBackupWStick() {
+        return deathBackupWStick;
+    }
+
+    public void clearDeathBackup() {
+        deathBackupHelmet = null;
+        deathBackupWStick = null;
+    }
+
+    public void setDeathBackupHelmet(ItemStack deathBackupHelmet) {
+        this.deathBackupHelmet = deathBackupHelmet;
+    }
+
+    public void setDeathBackupWStick(ItemStack deathBackupWStick) {
+        this.deathBackupWStick = deathBackupWStick;
     }
 
     public void forceClearCosmeticsInventory() {
@@ -1116,10 +1165,16 @@ public class PlayerData {
     }
 
     public void enterZone(){
+        enterZone(getOfflinePlayer().getPlayer());
+    }
+
+    public void enterZone(Player player){
+        if(player == null) return;
         Zone zone = getZone();
         if(zone == null) {
+            if(Zone.zones.isEmpty()) return;
             for(Zone z : Zone.zones.values()){
-                if(!z.isInZone(getOfflinePlayer().getPlayer().getLocation().getBlock())) continue;
+                if(!z.isInZone(player.getLocation())) continue;
                 setZone(z);
                 break;
             }
@@ -1129,7 +1184,6 @@ public class PlayerData {
             isZone = false;
             return;
         }
-        Player player = getOfflinePlayer().getPlayer();
         if(!getOfflinePlayer().isOnline()) return;
         if(isZone) {
             if(spectator){

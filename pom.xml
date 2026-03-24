@@ -9,7 +9,6 @@
     <version>1.4-SNAPSHOT</version>
     <modules>
         <module>api</module>
-        <module>v1_18_R1</module>
         <module>meg3_support</module>
         <module>meg4_support</module>
         <module>bungeecord</module>
@@ -18,6 +17,7 @@
         <module>v1_21_R2</module>
         <module>v1_21_R3</module>
         <module>v1_21_R4</module>
+        <module>v1_21_R5</module>
         <module>plugin</module>
     </modules>
     <build>

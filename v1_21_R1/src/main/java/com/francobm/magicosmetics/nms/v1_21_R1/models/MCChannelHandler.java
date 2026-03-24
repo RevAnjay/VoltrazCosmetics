@@ -2,6 +2,7 @@ package com.francobm.magicosmetics.nms.v1_21_R1.models;
 
 import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.api.CosmeticType;
+import com.francobm.magicosmetics.cache.EntityIdCache;
 import com.francobm.magicosmetics.cache.PlayerData;
 import com.francobm.magicosmetics.cache.cosmetics.Hat;
 import com.francobm.magicosmetics.cache.cosmetics.WStick;
@@ -126,7 +127,7 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     private ClientboundSetPassengersPacket handleEntityMount(ClientboundSetPassengersPacket packetPlayOutMount) {
         int id = packetPlayOutMount.getVehicle();
         int[] ids = packetPlayOutMount.getPassengers();
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
         if(!(entity instanceof Player)) return packetPlayOutMount;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
@@ -147,28 +148,33 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private void handleEntitySpawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
-        if(playerData == null) return;
-        if(playerData.getBag() == null) return;
-        Bukkit.getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> playerData.getBag().spawn(this.player.getBukkitEntity()));
+        if(playerData == null || playerData.getBag() == null) return;
+
+        Bukkit.getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> {
+            if(!otherPlayer.isOnline()) return;
+            playerData.getBag().spawn(this.player.getBukkitEntity());
+        });
     }
 
     private void handleEntityDespawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.player.serverLevel(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
         PlayerData playerData = PlayerData.getPlayer(otherPlayer);
-        if(playerData == null) return;
-        if(playerData.getBag() == null) return;
-        playerData.getBag().despawn(this.player.getBukkitEntity());
+        if(playerData == null || playerData.getBag() == null) return;
+
+        Bukkit.getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> {
+            if(!otherPlayer.isOnline()) return;
+            playerData.getBag().despawn(this.player.getBukkitEntity());
+        });
     }
 
-    protected org.bukkit.entity.Entity getEntityAsync(ServerLevel world, int id) {
-        net.minecraft.world.entity.Entity entity = getEntityGetter(world).get(id);
-        return entity == null ? null : entity.getBukkitEntity();
+    protected org.bukkit.entity.Entity getEntityAsync(int id) {
+        return EntityIdCache.getPlayer(id);
     }
 
     public static LevelEntityGetter<Entity> getEntityGetter(ServerLevel level) {

@@ -139,3 +139,4 @@ versions/
 # Gemini/AI assistant files
 .gemini/
 .agents/
+skills-lock.json

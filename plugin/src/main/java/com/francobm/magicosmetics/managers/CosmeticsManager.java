@@ -106,22 +106,27 @@ public class CosmeticsManager {
         if(otherCosmetics == null){
             otherCosmetics = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
                 for(PlayerData playerData : PlayerData.players.values()){
-                    if(!playerData.getOfflinePlayer().isOnline()) continue;
-                    playerData.activeCosmetics();
-                    playerData.enterZone();
+                    Player player = playerData.getOfflinePlayer().getPlayer();
+                    if(player == null) continue;
+                    boolean needsCosmeticUpdate = playerData.hasActiveCosmetics();
+                    boolean needsZoneUpdate = playerData.getZone() != null || !Zone.zones.isEmpty();
+                    // Skip players that have nothing to update
+                    if(!needsCosmeticUpdate && !needsZoneUpdate) continue;
+                    if(needsCosmeticUpdate) playerData.activeCosmetics(player);
+                    if(needsZoneUpdate) playerData.enterZone(player);
                 }
-            }, 5L, 2L);
+            }, 5L, 4L);
         }
         if(balloons == null) {
             balloons = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
                 for(PlayerData playerData : PlayerData.players.values()){
-                    if(!playerData.getOfflinePlayer().isOnline()) continue;
+                    if(playerData.getOfflinePlayer().getPlayer() == null) continue;
                     playerData.activeBalloon();
                 }
                 for(EntityCache entityCache : EntityCache.entities.values()){
                     entityCache.activeCosmetics();
                 }
-            }, 0L, 1L);
+            }, 0L, 2L);
         }
         /*if(saveDataTask == null && plugin.saveDataDelay != -1) {
             saveDataTask = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
