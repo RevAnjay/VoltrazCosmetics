@@ -27,55 +27,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: nms-${{ runner.os }}-v3-${{ hashFiles('**/pom.xml') }}
+          key: nms-${{ runner.os }}-v4-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            nms-${{ runner.os }}-v3-
+            nms-${{ runner.os }}-v4-
 
-      - name: Install paper-server 1.21.1 into local Maven
+      - name: Install Paper NMS via paper-nms-maven-plugin
         run: |
-          if [ -f ~/.m2/repository/io/papermc/paper/paper-server/1.21.1-R0.1-SNAPSHOT/paper-server-1.21.1-R0.1-SNAPSHOT.jar ]; then
-            echo "paper-server already cached, skipping"
-            exit 0
-          fi
-
-          echo "Downloading Paper dev-bundle..."
-          DEV_BUNDLE_META=$(curl -sf https://repo.papermc.io/repository/maven-public/io/papermc/paper/dev-bundle/1.21.1-R0.1-SNAPSHOT/maven-metadata.xml)
-          TIMESTAMP=$(echo "$DEV_BUNDLE_META" | grep -oP '(?<=<value>)[^<]+' | tail -1)
-          curl -o /tmp/dev-bundle.zip "https://repo.papermc.io/repository/maven-public/io/papermc/paper/dev-bundle/1.21.1-R0.1-SNAPSHOT/dev-bundle-${TIMESTAMP}.zip"
-
-          echo "Extracting dev-bundle..."
-          mkdir -p /tmp/dev-bundle
-          cd /tmp/dev-bundle
-          unzip -q /tmp/dev-bundle.zip
-
-          echo "Finding and extracting paperclip server JAR..."
-          PAPERCLIP_JAR=$(find /tmp/dev-bundle -name "*.jar" -path "*/mojang-mapped-server/*" | head -1)
-          if [ -z "$PAPERCLIP_JAR" ]; then
-            PAPERCLIP_JAR=$(find /tmp/dev-bundle -name "mojang-mapped-server*.jar" | head -1)
-          fi
-          if [ -z "$PAPERCLIP_JAR" ]; then
-            echo "Trying alternate extraction..."
-            PAPERCLIP_JAR=$(find /tmp/dev-bundle -name "*.jar" | head -1)
-          fi
-
-          if [ -n "$PAPERCLIP_JAR" ]; then
-            echo "Found server JAR: $PAPERCLIP_JAR"
-            mvn install:install-file \
-              -Dfile="$PAPERCLIP_JAR" \
-              -DgroupId=io.papermc.paper \
-              -DartifactId=paper-server \
-              -Dversion=1.21.1-R0.1-SNAPSHOT \
-              -Dpackaging=jar \
-              -DgeneratePom=true \
-              -B
-          else
-            echo "ERROR: Could not find server JAR in dev-bundle"
-            echo "Contents of dev-bundle:"
-            find /tmp/dev-bundle -type f
-            exit 1
-          fi
-
-          rm -rf /tmp/dev-bundle /tmp/dev-bundle.zip
+          mvn paper-nms:init -f v1_21_R1/pom.xml -B
+          mvn paper-nms:init -f v1_21_R5/pom.xml -B
 
       - name: Install Spigot NMS via BuildTools (v1_21_R2, R3, R4)
         run: |
