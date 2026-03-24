@@ -16,18 +16,18 @@ Plugin kosmetik untuk server Minecraft yang memungkinkan pemain mengenakan item 
 
 ## 📋 Persyaratan
 
-- **Java** 8+
-- **Minecraft** 1.17 — 1.21.5
-- **Server** Paper / Spigot
+- **Java** 21+
+- **Minecraft** 1.21 — 1.21.5+
+- **Server** Paper
 - **Maven** 3.6+ (untuk build)
 
 ## 🔧 Build
 
 ```bash
-mvn clean package -pl plugin -am
+mvn clean package -DskipTests
 ```
 
-Output JAR: `plugin/target/MagicCosmetics-3.1.1.jar`
+Output JAR: `plugin/target/VoltrazCosmetics-3.2.0.jar`
 
 ## 📦 Modul Proyek
 
@@ -35,7 +35,7 @@ Output JAR: `plugin/target/MagicCosmetics-3.1.1.jar`
 |-------|-----------|
 | `api` | API publik & class dasar (`Cosmetic`, `CosmeticType`) |
 | `plugin` | Plugin utama, listener, database, cache |
-| `v1_18_R1` — `v1_21_R4` | NMS adapter per versi Minecraft |
+| `v1_21_R1` — `v1_21_R5` | NMS adapter untuk MC 1.21.x |
 | `meg3_support` / `meg4_support` | Integrasi ModelEngine |
 | `bungeecord` / `velocity` | Proxy support |
 
@@ -96,6 +96,16 @@ plugin/src/main/java/com/francobm/magicosmetics/
 
 ## 📝 Changelog Terbaru
 
+### v3.2.0
+- **Breaking:** Hapus support MC 1.16 — 1.20 (sekarang hanya 1.21+)
+- **Fix:** Helmet hilang/duplikat saat mati PvP dengan kosmetik aktif
+- **Fix:** PDC key kosmetik tetap terjaga di `getItemWithNBTsCopy()` semua versi NMS
+- **Perf:** Hapus `ItemStack.clone()` yang tidak perlu di death handler
+- **Fix:** Death handler menggunakan single-pass iterator untuk drop cleaning
+- **Fix:** `keepInventory` death path sekarang backup dan restore item dengan benar
+- **Refactor:** Hapus 10 modul NMS lama (v1_16_R3 — v1_20_R4)
+- **Fix:** MCChannelHandler packet interceptor dioptimasi di semua versi v1_21
+
 ### v3.1.1
 - **Fix:** Helmet tidak hilang lagi saat player disconnect/quit dengan kosmetik aktif
 - **Fix:** Helmet tidak hilang saat death dengan `keepInventory: true`
@@ -110,4 +120,4 @@ plugin/src/main/java/com/francobm/magicosmetics/
 
 ## 📄 Lisensi
 
-Plugin ini dibuat oleh **FrancoBM**. Fork ini dikelola untuk kebutuhan server **Voltraz**.
+Plugin ini dibuat oleh **FrancoBM**. Fork ini dikelola oleh **RevelX** untuk server **Voltraz**.

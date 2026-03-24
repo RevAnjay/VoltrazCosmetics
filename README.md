@@ -29,7 +29,7 @@ A cosmetic plugin for Minecraft servers that allows players to wear cosmetic ite
 mvn clean package -DskipTests
 ```
 
-Output JAR: `plugin/target/MagicCosmetics-3.2.0.jar`
+Output JAR: `plugin/target/VoltrazCosmetics-3.2.0.jar`
 
 ## 📦 Project Modules
 

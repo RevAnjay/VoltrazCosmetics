@@ -10,7 +10,7 @@
     <version>3.2.0</version>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>MagicCosmetics</artifactId>
+    <artifactId>VoltrazCosmetics</artifactId>
 
         <properties>
             <maven.compiler.source>8</maven.compiler.source>
