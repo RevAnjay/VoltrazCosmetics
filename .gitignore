@@ -140,3 +140,4 @@ versions/
 .gemini/
 .agents/
 skills-lock.json
+.paper-nms/
