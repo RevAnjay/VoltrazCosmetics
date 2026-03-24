@@ -27,41 +27,68 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: nms-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          key: nms-${{ runner.os }}-v3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            nms-${{ runner.os }}-
+            nms-${{ runner.os }}-v3-
 
-      - name: Install Paper Server 1.21.1 (for v1_21_R1 & v1_21_R5)
+      - name: Install paper-server 1.21.1 into local Maven
         run: |
-          if [ ! -f ~/.m2/repository/io/papermc/paper/paper-server/1.21.1-R0.1-SNAPSHOT/paper-server-1.21.1-R0.1-SNAPSHOT.jar ]; then
-            mkdir -p /tmp/paper-install && cd /tmp/paper-install
-            PAPER_BUILD=$(curl -s https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds | python3 -c "import sys,json; builds=json.load(sys.stdin)['builds']; print(builds[-1]['build'])")
-            curl -o paper.jar "https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/${PAPER_BUILD}/downloads/paper-1.21.1-${PAPER_BUILD}.jar"
-            java -Dpaperclip.install=true -jar paper.jar
-            cd / && rm -rf /tmp/paper-install
+          if [ -f ~/.m2/repository/io/papermc/paper/paper-server/1.21.1-R0.1-SNAPSHOT/paper-server-1.21.1-R0.1-SNAPSHOT.jar ]; then
+            echo "paper-server already cached, skipping"
+            exit 0
           fi
 
-      - name: Install Spigot NMS via BuildTools
+          echo "Downloading Paper dev-bundle..."
+          DEV_BUNDLE_META=$(curl -sf https://repo.papermc.io/repository/maven-public/io/papermc/paper/dev-bundle/1.21.1-R0.1-SNAPSHOT/maven-metadata.xml)
+          TIMESTAMP=$(echo "$DEV_BUNDLE_META" | grep -oP '(?<=<value>)[^<]+' | tail -1)
+          curl -o /tmp/dev-bundle.zip "https://repo.papermc.io/repository/maven-public/io/papermc/paper/dev-bundle/1.21.1-R0.1-SNAPSHOT/dev-bundle-${TIMESTAMP}.zip"
+
+          echo "Extracting dev-bundle..."
+          mkdir -p /tmp/dev-bundle
+          cd /tmp/dev-bundle
+          unzip -q /tmp/dev-bundle.zip
+
+          echo "Finding and extracting paperclip server JAR..."
+          PAPERCLIP_JAR=$(find /tmp/dev-bundle -name "*.jar" -path "*/mojang-mapped-server/*" | head -1)
+          if [ -z "$PAPERCLIP_JAR" ]; then
+            PAPERCLIP_JAR=$(find /tmp/dev-bundle -name "mojang-mapped-server*.jar" | head -1)
+          fi
+          if [ -z "$PAPERCLIP_JAR" ]; then
+            echo "Trying alternate extraction..."
+            PAPERCLIP_JAR=$(find /tmp/dev-bundle -name "*.jar" | head -1)
+          fi
+
+          if [ -n "$PAPERCLIP_JAR" ]; then
+            echo "Found server JAR: $PAPERCLIP_JAR"
+            mvn install:install-file \
+              -Dfile="$PAPERCLIP_JAR" \
+              -DgroupId=io.papermc.paper \
+              -DartifactId=paper-server \
+              -Dversion=1.21.1-R0.1-SNAPSHOT \
+              -Dpackaging=jar \
+              -DgeneratePom=true \
+              -B
+          else
+            echo "ERROR: Could not find server JAR in dev-bundle"
+            echo "Contents of dev-bundle:"
+            find /tmp/dev-bundle -type f
+            exit 1
+          fi
+
+          rm -rf /tmp/dev-bundle /tmp/dev-bundle.zip
+
+      - name: Install Spigot NMS via BuildTools (v1_21_R2, R3, R4)
         run: |
           mkdir -p ~/buildtools && cd ~/buildtools
           if [ ! -f BuildTools.jar ]; then
             curl -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
           fi
 
-          # v1_21_R2 needs 1.21.3
-          if [ ! -f ~/.m2/repository/org/spigotmc/spigot/1.21.3-R0.1-SNAPSHOT/spigot-1.21.3-R0.1-SNAPSHOT-remapped-mojang.jar ]; then
-            java -jar BuildTools.jar --rev 1.21.3 --remapped
-          fi
-
-          # v1_21_R3 needs 1.21.4
-          if [ ! -f ~/.m2/repository/org/spigotmc/spigot/1.21.4-R0.1-SNAPSHOT/spigot-1.21.4-R0.1-SNAPSHOT-remapped-mojang.jar ]; then
-            java -jar BuildTools.jar --rev 1.21.4 --remapped
-          fi
-
-          # v1_21_R4 needs 1.21.5
-          if [ ! -f ~/.m2/repository/org/spigotmc/spigot/1.21.5-R0.1-SNAPSHOT/spigot-1.21.5-R0.1-SNAPSHOT-remapped-mojang.jar ]; then
-            java -jar BuildTools.jar --rev 1.21.5 --remapped
-          fi
+          for VER in 1.21.3 1.21.4 1.21.5; do
+            if [ ! -f ~/.m2/repository/org/spigotmc/spigot/${VER}-R0.1-SNAPSHOT/spigot-${VER}-R0.1-SNAPSHOT-remapped-mojang.jar ]; then
+              java -jar BuildTools.jar --rev ${VER} --remapped
+            fi
+          done
 
       - name: Build with Maven
         run: mvn clean package -DskipTests -B
