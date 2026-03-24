@@ -264,12 +264,7 @@
             <version>3.6.6</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>net.craftersland.data.bridge</groupId>
-            <artifactId>mpdb</artifactId>
-            <version>4.11.0</version>
-            <scope>provided</scope>
-        </dependency>
+
         <!-- MultiverseCore dependency removed: MVTeleportEvent no longer exists in MV5,
              and PlayerListener.onTeleport handles all teleport events via Bukkit API -->
         <dependency>
