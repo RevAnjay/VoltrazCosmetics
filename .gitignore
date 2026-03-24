@@ -121,7 +121,7 @@ paper-extract/
 libraries/
 
 # Local Maven cache
-cache/
+/cache/
 
 # Working/temp folders
 Hype/
@@ -140,4 +140,3 @@ versions/
 .gemini/
 .agents/
 skills-lock.json
-.paper-nms/
