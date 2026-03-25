@@ -87,6 +87,15 @@ public class PlayerData {
         return players.get(player.getUniqueId());
     }
 
+    /**
+     * Returns the PlayerData for the given player WITHOUT auto-creating.
+     * Use this in packet handlers and async contexts where auto-creation is undesirable.
+     * @return PlayerData or null if not loaded
+     */
+    public static PlayerData getPlayerIfPresent(OfflinePlayer player){
+        return players.get(player.getUniqueId());
+    }
+
     public void setOfflinePlayer(OfflinePlayer offlinePlayer) {
         this.offlinePlayer = offlinePlayer;
     }
@@ -184,7 +193,10 @@ public class PlayerData {
     }
 
     public static void removePlayer(PlayerData player){
-        players.remove(player.getUniqueId());
+        // Use remove(key, value) to only remove if the map still holds this exact instance.
+        // Prevents race condition: if player reconnects before async save completes,
+        // the old callback must NOT remove the newly created PlayerData.
+        players.remove(player.getUniqueId(), player);
     }
 
     public Hat getHat() {

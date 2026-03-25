@@ -85,7 +85,7 @@ public class PlayerListener implements Listener {
         // Restore saved helmet/offhand items before server saves player data
         // This prevents the cosmetic item from being saved as the player's helmet
         playerData.clearCosmeticsToSaveData();
-        plugin.getSql().savePlayerAsync(playerData);
+        plugin.getSql().savePlayerAsync(playerData).thenRun(() -> PlayerData.removePlayer(playerData));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

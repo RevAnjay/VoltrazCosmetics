@@ -131,9 +131,13 @@ public class MCChannelHandler extends ChannelDuplexHandler {
             newIds[i + 1] = ids[i];
         }
         FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
-        data.writeVarInt(id);
-        data.writeVarIntArray(newIds);
-        return ClientboundSetPassengersPacket.STREAM_CODEC.decode(data);
+        try {
+            data.writeVarInt(id);
+            data.writeVarIntArray(newIds);
+            return ClientboundSetPassengersPacket.STREAM_CODEC.decode(data);
+        } finally {
+            data.release();
+        }
     }
 
     private void handleEntitySpawn(int id) {

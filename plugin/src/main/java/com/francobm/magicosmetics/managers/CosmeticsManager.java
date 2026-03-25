@@ -126,7 +126,7 @@ public class CosmeticsManager {
                 for(EntityCache entityCache : EntityCache.entities.values()){
                     entityCache.activeCosmetics();
                 }
-            }, 0L, 2L);
+            }, 0L, 4L);
         }
         /*if(saveDataTask == null && plugin.saveDataDelay != -1) {
             saveDataTask = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {

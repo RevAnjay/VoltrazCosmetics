@@ -106,9 +106,13 @@ public class MCChannelHandler extends ChannelDuplexHandler {
             newIds[i + 1] = ids[i];
         }
         PacketDataSerializer data = new PacketDataSerializer(Unpooled.buffer());
-        data.d(id);
-        data.a(newIds);
-        return new PacketPlayOutMount(data);
+        try {
+            data.d(id);
+            data.a(newIds);
+            return new PacketPlayOutMount(data);
+        } finally {
+            data.release();
+        }
     }
 
     private void handleEntitySpawn(int id) {

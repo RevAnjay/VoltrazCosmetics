@@ -12,9 +12,12 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
+import org.bukkit.inventory.ItemStack;
+
 import java.util.*;
 
 public class EntityCache {
+    private static final ItemStack AIR_ITEM = XMaterial.AIR.parseItem();
     public static Map<UUID, EntityCache> entities = new java.util.concurrent.ConcurrentHashMap<>();
     private final UUID uniqueId;
     private boolean npc = false;
@@ -196,10 +199,10 @@ public class EntityCache {
         if(!(entity instanceof LivingEntity)) return;
         if(!npc){
             LivingEntity livingEntity = (LivingEntity) entity;
-            MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.HELMET, XMaterial.AIR.parseItem());
+            MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.HELMET, AIR_ITEM);
             return;
         }
-        MagicCosmetics.getInstance().getCitizens().EquipmentNPC(ItemSlot.HELMET, getUniqueId(), XMaterial.AIR.parseItem());
+        MagicCosmetics.getInstance().getCitizens().EquipmentNPC(ItemSlot.HELMET, getUniqueId(), AIR_ITEM);
     }
 
     public void clearBag(){
@@ -214,10 +217,10 @@ public class EntityCache {
         if(!(entity instanceof LivingEntity)) return;
         if(!npc){
             LivingEntity livingEntity = (LivingEntity) entity;
-            MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.OFF_HAND, XMaterial.AIR.parseItem());
+            MagicCosmetics.getInstance().getVersion().equip(livingEntity, ItemSlot.OFF_HAND, AIR_ITEM);
             return;
         }
-        MagicCosmetics.getInstance().getCitizens().EquipmentNPC(ItemSlot.OFF_HAND, getUniqueId(), XMaterial.AIR.parseItem());
+        MagicCosmetics.getInstance().getCitizens().EquipmentNPC(ItemSlot.OFF_HAND, getUniqueId(), AIR_ITEM);
     }
 
     public void clearBalloon(){
