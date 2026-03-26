@@ -97,6 +97,8 @@ public class CosmeticsManager {
         if(!config.contains("proxy")) {
             config.set("proxy", false);
         }
+        if(!config.contains("worldguard-support"))
+            config.set("worldguard-support", true);
         zones.save();
         config.save();
         messages.save();

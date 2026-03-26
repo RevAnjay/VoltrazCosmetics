@@ -6,6 +6,10 @@ equip-message: true
 save-on-quit: true
 bossbar-color: YELLOW
 proxy: false
+# Enable/disable WorldGuard cosmetic zone support.
+# If you don't use WorldGuard regions to restrict cosmetics,
+# set this to false for better performance (saves ~0.4% server thread).
+worldguard-support: true
 luckperms-server: ''
 permissions: true
 zones-hide-items: true

@@ -345,7 +345,7 @@ public final class MagicCosmetics extends JavaPlugin {
         if(isMpdb()){
             getServer().getPluginManager().registerEvents(mpdb, this);
         }
-        if(worldGuard != null){
+        if(worldGuard != null && getConfig().getBoolean("worldguard-support", true)){
             getServer().getPluginManager().registerEvents(worldGuard, this);
         }
         // MultiverseCListener removed: PlayerListener.onTeleport(PlayerTeleportEvent)
