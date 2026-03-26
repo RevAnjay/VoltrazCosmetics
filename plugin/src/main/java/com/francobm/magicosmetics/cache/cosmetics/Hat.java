@@ -72,7 +72,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
                 player.getInventory().setHelmet(getItemPlaceholders(player));
                 return;
             }
-            currentItemSaved = itemStack;
+            currentItemSaved = itemStack.clone();
             return;
         }
         //Equip hat combined with helmet saved in cache
@@ -107,7 +107,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             }else {
                 helmet = currentItemSaved != null ? currentItemSaved.clone() : null;
             }
-            currentItemSaved = originalItem;
+            currentItemSaved = originalItem != null ? originalItem.clone() : null;
             player.getInventory().setHelmet(currentItemSaved);
             return helmet;
         }
@@ -192,7 +192,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     }
 
     private ItemStack combinedItems(ItemStack originalItem) {
-        this.currentItemSaved = originalItem;
+        this.currentItemSaved = originalItem != null ? originalItem.clone() : null;
         ItemStack cosmeticItem = getItemPlaceholders(player);
         if(currentItemSaved == null) return cosmeticItem;
         ItemMeta cosmeticMeta = cosmeticItem.getItemMeta();
