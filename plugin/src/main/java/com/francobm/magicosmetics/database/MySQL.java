@@ -210,13 +210,13 @@ public class MySQL extends SQL{
                     String spray = resultSet.getString("Spray");
                     playerData.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
                     playerData.loadCosmetics(cosmetics);
-                    playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));
-                    playerData.setCosmetic(CosmeticType.SPRAY, playerData.getCosmeticById(spray));
-                    EntityBag.updateEntityBag(player);
-                    EntityBalloon.updateEntityBalloon(player);
-                    CustomSpray.updateSpray(player);
                     PlayerBalloon.updatePlayerBalloon(player);
+                    CustomSpray.updateSpray(player);
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        EntityBag.updateEntityBag(player);
+                        EntityBalloon.updateEntityBalloon(player);
+                        playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));
+                        playerData.setCosmetic(CosmeticType.SPRAY, playerData.getCosmeticById(spray));
                         playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
                         playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
                         playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));

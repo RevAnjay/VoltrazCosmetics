@@ -168,7 +168,11 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             if(isCosmetic(player.getInventory().getHelmet())) return;
             int amount = currentItemSaved.getAmount();
             if (!all) {
-                currentItemSaved.setAmount(amount - 1);
+                if(amount <= 1) {
+                    currentItemSaved = null;
+                } else {
+                    currentItemSaved.setAmount(amount - 1);
+                }
             }else {
                 currentItemSaved = null;
             }
@@ -178,7 +182,11 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         int amount = getItem.getAmount();
         if (!all) {
             getItem.setAmount(1);
-            currentItemSaved.setAmount(amount - 1);
+            if(amount <= 1) {
+                currentItemSaved = null;
+            } else {
+                currentItemSaved.setAmount(amount - 1);
+            }
         }else {
             getItem.setAmount(amount);
             currentItemSaved = null;
