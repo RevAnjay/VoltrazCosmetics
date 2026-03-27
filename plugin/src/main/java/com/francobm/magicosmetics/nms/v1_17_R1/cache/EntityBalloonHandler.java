@@ -254,9 +254,6 @@ public class EntityBalloonHandler extends EntityBalloon {
                 continue;
             }
             EntityPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
-                p.b.sendPacket(new PacketPlayOutAttachEntity(leashed, ((CraftEntity) getEntity()).getHandle()));
-            }
             p.b.sendPacket(new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), true));
             p.b.sendPacket(new PacketPlayOutEntityTeleport(leashed));
             p.b.sendPacket(new PacketPlayOutEntityTeleport(armorStand));
@@ -354,9 +351,6 @@ public class EntityBalloonHandler extends EntityBalloon {
                 continue;
             }
             EntityPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
-                p.b.sendPacket(new PacketPlayOutAttachEntity(leashed, ((CraftEntity) getEntity()).getHandle()));
-            }
             p.b.sendPacket(new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), true));
             p.b.sendPacket(new PacketPlayOutEntityTeleport(leashed));
             p.b.sendPacket(new PacketPlayOutEntityTeleport(armorStand));

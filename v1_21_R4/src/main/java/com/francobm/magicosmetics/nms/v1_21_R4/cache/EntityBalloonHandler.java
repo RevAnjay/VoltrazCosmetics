@@ -246,9 +246,6 @@ public class EntityBalloonHandler extends EntityBalloon {
                 continue;
             }
             ServerPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
-                p.connection.send(new ClientboundSetEntityLinkPacket(leashed, ((CraftEntity) getEntity()).getHandle()));
-            }
             p.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
             p.connection.send(new ClientboundTeleportEntityPacket(leashed.getId(), PositionMoveRotation.of(leashed), java.util.Set.of(), false));
             p.connection.send(new ClientboundTeleportEntityPacket(armorStand.getId(), PositionMoveRotation.of(armorStand), java.util.Set.of(), false));
@@ -340,9 +337,6 @@ public class EntityBalloonHandler extends EntityBalloon {
                 continue;
             }
             ServerPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
-                p.connection.send(new ClientboundSetEntityLinkPacket(leashed, ((CraftEntity) getEntity()).getHandle()));
-            }
             p.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
             p.connection.send(new ClientboundTeleportEntityPacket(leashed.getId(), PositionMoveRotation.of(leashed), java.util.Set.of(), false));
             p.connection.send(new ClientboundTeleportEntityPacket(armorStand.getId(), PositionMoveRotation.of(armorStand), java.util.Set.of(), false));

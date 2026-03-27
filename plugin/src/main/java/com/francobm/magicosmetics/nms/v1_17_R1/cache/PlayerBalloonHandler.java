@@ -241,6 +241,8 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             if (height < (-0.10 + 0)) heightLoop = false;
             return;
         }
+        boolean sendLeash = lendEntityDirty && !invisibleLeash;
+        if (sendLeash) lendEntityDirty = false;
         for(UUID uuid : viewers){
             Player player = Bukkit.getPlayer(uuid);
             if(player == null) {
@@ -248,7 +250,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                 continue;
             }
             EntityPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
+            if(sendLeash) {
                 p.b.sendPacket(new PacketPlayOutAttachEntity(leashed, lendEntity == null ? ((CraftPlayer) owner).getHandle() : ((CraftLivingEntity)lendEntity).getHandle()));
             }
             p.b.sendPacket(new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), true));
@@ -340,6 +342,8 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             leashed.setLocation(newLocation.getX(), newLocation.getY(), newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
             armorStand.setLocation(newLocation.getX(), newLocation.getY() - 1.3, newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
         }
+        boolean sendLeash = lendEntityDirty && !invisibleLeash;
+        if (sendLeash) lendEntityDirty = false;
         for(UUID uuid : viewers){
             Player player = Bukkit.getPlayer(uuid);
             if(player == null) {
@@ -347,7 +351,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                 continue;
             }
             EntityPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
+            if(sendLeash) {
                 p.b.sendPacket(new PacketPlayOutAttachEntity(leashed, lendEntity == null ? ((CraftPlayer) owner).getHandle() : ((CraftLivingEntity)lendEntity).getHandle()));
             }
             p.b.sendPacket(new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), true));
@@ -445,6 +449,8 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             leashed.setLocation(newLocation.getX(), newLocation.getY(), newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
             armorStand.setLocation(newLocation.getX(), newLocation.getY() - 1.3, newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
         }
+        boolean sendLeash = lendEntityDirty && !invisibleLeash;
+        if (sendLeash) lendEntityDirty = false;
         for(UUID uuid : viewers){
             Player player = Bukkit.getPlayer(uuid);
             if(player == null) {
@@ -452,7 +458,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                 continue;
             }
             EntityPlayer p = ((CraftPlayer)player).getHandle();
-            if(!invisibleLeash) {
+            if(sendLeash) {
                 p.b.sendPacket(new PacketPlayOutAttachEntity(leashed, lendEntity == null ? ((CraftPlayer) owner).getHandle() : ((CraftLivingEntity)lendEntity).getHandle()));
             }
             p.b.sendPacket(new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), true));

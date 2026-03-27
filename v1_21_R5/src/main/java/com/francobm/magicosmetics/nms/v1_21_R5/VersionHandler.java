@@ -157,9 +157,13 @@ public class VersionHandler extends Version {
                 list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
                 break;
         }
+        ClientboundSetEquipmentPacket packet = new ClientboundSetEquipmentPacket(livingEntity.getEntityId(), list);
+        Location entityLoc = livingEntity.getLocation();
+        double trackingRangeSq = 48 * 48; // vanilla entity tracking range squared
         for(Player p : Bukkit.getOnlinePlayers()){
-            ServerGamePacketListenerImpl connection = ((CraftPlayer)p).getHandle().connection;
-            connection.send(new ClientboundSetEquipmentPacket(livingEntity.getEntityId(), list));
+            if(!p.getWorld().equals(entityLoc.getWorld())) continue;
+            if(p.getLocation().distanceSquared(entityLoc) > trackingRangeSq) continue;
+            ((CraftPlayer)p).getHandle().connection.send(packet);
         }
     }
 

@@ -27,7 +27,7 @@ Plugin kosmetik untuk server Minecraft yang memungkinkan pemain mengenakan item 
 mvn clean package -DskipTests
 ```
 
-Output JAR: `plugin/target/VoltrazCosmetics-3.2.0.jar`
+Output JAR: `plugin/target/VoltrazCosmetics-x.jar`
 
 ## 📦 Modul Proyek
 

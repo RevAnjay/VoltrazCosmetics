@@ -27,6 +27,7 @@ public abstract class PlayerBalloon {
     protected double space;
     protected boolean bigHead = false;
     protected boolean invisibleLeash;
+    protected boolean lendEntityDirty = false;
 
 
     public static void updatePlayerBalloon(Player player){
@@ -66,6 +67,7 @@ public abstract class PlayerBalloon {
 
     public void setLendEntity(LivingEntity lendEntity) {
         this.lendEntity = lendEntity;
+        this.lendEntityDirty = true;
     }
 
     public Player getPlayer(){
