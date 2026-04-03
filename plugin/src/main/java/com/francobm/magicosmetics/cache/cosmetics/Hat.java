@@ -61,18 +61,21 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             return;
         }
         if(!overlaps) {
-            ItemStack itemStack = player.getInventory().getHelmet();
             if(currentItemSaved != null) {
-                player.getInventory().setHelmet(currentItemSaved);
+                player.getInventory().setHelmet(getItemPlaceholders(player));
                 return;
             }
+            ItemStack itemStack = player.getInventory().getHelmet();
             if(itemStack == null || itemStack.getType().isAir() || isCosmetic(itemStack)) {
                 //Equip Helmet Without combined.
                 currentItemSaved = null;
                 player.getInventory().setHelmet(getItemPlaceholders(player));
                 return;
             }
+            player.getInventory().setHelmet(null);
             currentItemSaved = itemStack.clone();
+            player.getInventory().setHelmet(getItemPlaceholders(player));
+            player.updateInventory();
             return;
         }
         //Equip hat combined with helmet saved in cache
@@ -87,8 +90,10 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             player.getInventory().setHelmet(getItemPlaceholders(player));
             return;
         }
+        player.getInventory().setHelmet(null);
         combinedItem = combinedItems(itemStack);
         player.getInventory().setHelmet(combinedItem);
+        player.updateInventory();
     }
 
     public ItemStack changeItem(ItemStack originalItem) {
@@ -101,14 +106,9 @@ public class Hat extends Cosmetic implements CosmeticInventory {
                     return null;
                 }
             }
-            ItemStack helmet;
-            if(player.getInventory().getHelmet() != null && player.getInventory().getHelmet().isSimilar(currentItemSaved)) {
-                helmet = player.getInventory().getHelmet().clone();
-            }else {
-                helmet = currentItemSaved != null ? currentItemSaved.clone() : null;
-            }
+            ItemStack helmet = currentItemSaved != null ? currentItemSaved.clone() : null;
             currentItemSaved = originalItem != null ? originalItem.clone() : null;
-            player.getInventory().setHelmet(currentItemSaved);
+            player.getInventory().setHelmet(getItemPlaceholders(player));
             return helmet;
         }
         ItemStack helmet = currentItemSaved != null ? MagicCosmetics.getInstance().getVersion().getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved.clone()) : null;
@@ -120,12 +120,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     public void leftItem() {
         if(currentItemSaved == null) return;
         if(!overlaps){
-            if(player.getInventory().getHelmet() == null || player.getInventory().getHelmet().getType().isAir()) return;
-            if(isCosmetic(player.getInventory().getHelmet())) return;
-            if(player.getInventory().getHelmet().isSimilar(currentItemSaved))
-                player.setItemOnCursor(currentItemSaved.clone());
-            else
-                player.setItemOnCursor(player.getInventory().getHelmet().clone());
+            player.setItemOnCursor(currentItemSaved.clone());
             currentItemSaved = null;
             player.getInventory().setHelmet(getItemPlaceholders(player));
             return;
@@ -141,13 +136,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     public ItemStack leftItemAndGet() {
         if(currentItemSaved == null) return null;
         if(!overlaps) {
-            if(player.getInventory().getHelmet() == null || player.getInventory().getHelmet().getType().isAir()) return null;
-            if(isCosmetic(player.getInventory().getHelmet())) return null;
-            ItemStack getItem;
-            if(player.getInventory().getHelmet().isSimilar(currentItemSaved))
-                getItem = currentItemSaved.clone();
-            else
-                getItem = player.getInventory().getHelmet().clone();
+            ItemStack getItem = currentItemSaved.clone();
             currentItemSaved = null;
             player.getInventory().setHelmet(getItemPlaceholders(player));
             return getItem;
@@ -163,21 +152,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     public void dropItem(boolean all) {
         if(currentItemSaved == null) return;
         //Bukkit.getLogger().info("Current Item Saved: " + currentItemSaved.getType().name());
-        if(!overlaps) {
-            if(player.getInventory().getHelmet() == null || player.getInventory().getHelmet().getType().isAir()) return;
-            if(isCosmetic(player.getInventory().getHelmet())) return;
-            int amount = currentItemSaved.getAmount();
-            if (!all) {
-                if(amount <= 1) {
-                    currentItemSaved = null;
-                } else {
-                    currentItemSaved.setAmount(amount - 1);
-                }
-            }else {
-                currentItemSaved = null;
-            }
-            return;
-        }
+        
         ItemStack getItem = currentItemSaved.clone();
         int amount = getItem.getAmount();
         if (!all) {
@@ -197,6 +172,13 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         itemEntity.setThrower(player.getUniqueId());
         itemEntity.setVelocity(Utils.getItemDropVelocity(player));
         itemEntity.setPickupDelay(40);
+        
+        if(!overlaps) {
+            MagicCosmetics.getInstance().getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> {
+                player.getInventory().setHelmet(getItemPlaceholders(player));
+                player.updateInventory();
+            });
+        }
     }
 
     private ItemStack combinedItems(ItemStack originalItem) {
@@ -298,15 +280,18 @@ public class Hat extends Cosmetic implements CosmeticInventory {
                 player.getInventory().setHelmet(currentItemSaved.clone());
                 currentItemSaved = null;
             }
+            player.updateInventory();
             return;
         }
         if(currentItemSaved != null){
             //Clear Hat With helmet save in cache
             player.getInventory().setHelmet(currentItemSaved.clone());
             currentItemSaved = null;
+            player.updateInventory();
             return;
         }
         player.getInventory().setHelmet(null);
+        player.updateInventory();
     }
 
     public boolean isOverlaps() {

@@ -1046,13 +1046,17 @@ public class PlayerData {
     }
 
     public void clearCosmeticsToSaveData() {
-        if(hat != null){
-            deathBackupHelmet = hat.getCurrentItemSaved() != null ? hat.getCurrentItemSaved().clone() : null;
-            hat.clearClose();
+        if(hat != null) {
+            if(deathBackupHelmet == null) {
+                deathBackupHelmet = hat.getCurrentItemSaved() != null ? hat.getCurrentItemSaved().clone() : null;
+                hat.clearClose();
+            }
         }
         if(wStick != null) {
-            deathBackupWStick = wStick.getCurrentItemSaved() != null ? wStick.getCurrentItemSaved().clone() : null;
-            wStick.clearClose();
+            if(deathBackupWStick == null) {
+                deathBackupWStick = wStick.getCurrentItemSaved() != null ? wStick.getCurrentItemSaved().clone() : null;
+                wStick.clearClose();
+            }
         }
         if(balloon != null)
             balloon.clearClose();

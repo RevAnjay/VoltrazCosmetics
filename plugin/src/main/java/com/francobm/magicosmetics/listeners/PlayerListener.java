@@ -428,6 +428,8 @@ public class PlayerListener implements Listener {
     public void onInteractInventory(CosmeticInventoryUpdateEvent event) {
         Player player = event.getPlayer();
         Cosmetic cosmetic = event.getCosmetic();
+        PlayerData pd = PlayerData.getPlayer(player);
+        if(pd != null && pd.getEquip(event.getCosmeticType()) != cosmetic) return;
         if(cosmetic.isHideCosmetic()) return;
         ItemStack itemStack = event.getItemToChange();
         CosmeticInventory cosmeticInventory = (CosmeticInventory) cosmetic;
@@ -508,6 +510,7 @@ public class PlayerListener implements Listener {
                 event.setCancelled(true);
                 ItemStack returnItem = playerData.getWStick().changeItem(event.getCursor() != null && event.getCursor().getType().isAir() ? null : event.getCursor());
                 player.setItemOnCursor(returnItem);
+                player.updateInventory();
                 return;
             }
         }
@@ -536,6 +539,7 @@ public class PlayerListener implements Listener {
                 if(event.getCursor() == null || event.getCursor().getType().isAir() || event.getCursor().getType().name().endsWith("HELMET") || event.getCursor().getType().name().endsWith("HEAD") || player.hasPermission("magicosmetics.hat.use")) {
                     ItemStack returnItem = playerData.getHat().changeItem(event.getCursor() != null && event.getCursor().getType().isAir() ? null : event.getCursor());
                     player.setItemOnCursor(returnItem);
+                    player.updateInventory();
                 }
             }
         }

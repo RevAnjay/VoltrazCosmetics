@@ -58,17 +58,22 @@ public class WStick extends Cosmetic implements CosmeticInventory {
             return;
         }
         if(!overlaps) {
-            ItemStack itemStack = player.getInventory().getItemInOffHand();
             if(currentItemSaved != null) {
-                player.getInventory().setItemInOffHand(currentItemSaved);
-                return;
-            }
-            if(itemStack.getType().isAir() || isCosmetic(itemStack)) {
-                //Equip offhand Without combined.
                 player.getInventory().setItemInOffHand(getItemPlaceholders(player));
                 return;
             }
-            // Player has a non-cosmetic item in off-hand, don't equip cosmetic
+            ItemStack itemStack = player.getInventory().getItemInOffHand();
+            if(itemStack.getType().isAir() || isCosmetic(itemStack)) {
+                //Equip offhand Without combined.
+                currentItemSaved = null;
+                player.getInventory().setItemInOffHand(getItemPlaceholders(player));
+                return;
+            }
+            // Atomically remove from slot FIRST, then store in memory
+            player.getInventory().setItemInOffHand(null);
+            currentItemSaved = itemStack.clone();
+            player.getInventory().setItemInOffHand(getItemPlaceholders(player));
+            player.updateInventory();
             return;
         }
         //Equip offhand combined with offhand item saved in cache
@@ -83,10 +88,12 @@ public class WStick extends Cosmetic implements CosmeticInventory {
             player.getInventory().setItemInOffHand(getItemPlaceholders(player));
             return;
         }
-        //Equip helmet combined with hat.
-        ItemStack offHand = player.getInventory().getItemInOffHand();
+        // Atomically remove from slot FIRST, then store in memory via combinedItems
+        player.getInventory().setItemInOffHand(null);
+        ItemStack offHand = itemStack;
         combinedItem = combinedItems(offHand);
         player.getInventory().setItemInOffHand(combinedItem);
+        player.updateInventory();
     }
 
     public ItemStack changeItem(ItemStack originalItem) {
@@ -99,13 +106,10 @@ public class WStick extends Cosmetic implements CosmeticInventory {
                     return null;
                 }
             }
-            ItemStack offhand;
-            if(player.getInventory().getItemInOffHand().isSimilar(currentItemSaved))
-                offhand = player.getInventory().getItemInOffHand().clone();
-            else
-                offhand = currentItemSaved != null ? currentItemSaved.clone() : null;
-            currentItemSaved = originalItem;
-            player.getInventory().setItemInOffHand(currentItemSaved);
+            // Always use currentItemSaved as source of truth, never read back from slot
+            ItemStack offhand = currentItemSaved != null ? currentItemSaved.clone() : null;
+            currentItemSaved = originalItem != null ? originalItem.clone() : null;
+            player.getInventory().setItemInOffHand(getItemPlaceholders(player));
             return offhand;
         }
         ItemStack offhand = currentItemSaved != null ? MagicCosmetics.getInstance().getVersion().getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved.clone()) : null;
@@ -117,12 +121,7 @@ public class WStick extends Cosmetic implements CosmeticInventory {
     public void leftItem() {
         if(currentItemSaved == null) return;
         if(!overlaps){
-            if(player.getInventory().getItemInOffHand().getType().isAir()) return;
-            if(isCosmetic(player.getInventory().getItemInOffHand())) return;
-            if(player.getInventory().getItemInOffHand().equals(currentItemSaved))
-                player.setItemOnCursor(currentItemSaved.clone());
-            else
-                player.setItemOnCursor(player.getInventory().getItemInOffHand().clone());
+            player.setItemOnCursor(currentItemSaved.clone());
             currentItemSaved = null;
             player.getInventory().setItemInOffHand(getItemPlaceholders(player));
             return;
@@ -137,13 +136,7 @@ public class WStick extends Cosmetic implements CosmeticInventory {
     public ItemStack leftItemAndGet() {
         if(currentItemSaved == null) return null;
         if(!overlaps) {
-            if(player.getInventory().getItemInOffHand().getType().isAir()) return null;
-            if(isCosmetic(player.getInventory().getItemInOffHand())) return null;
-            ItemStack getItem;
-            if(player.getInventory().getItemInOffHand().equals(currentItemSaved))
-                getItem = currentItemSaved.clone();
-            else
-                getItem = player.getInventory().getItemInOffHand().clone();
+            ItemStack getItem = currentItemSaved.clone();
             currentItemSaved = null;
             player.getInventory().setItemInOffHand(getItemPlaceholders(player));
             return getItem;
@@ -157,21 +150,7 @@ public class WStick extends Cosmetic implements CosmeticInventory {
     @Override
     public void dropItem(boolean all) {
         if(currentItemSaved == null) return;
-        if(!overlaps) {
-            if(player.getInventory().getItemInOffHand().getType().isAir()) return;
-            if(isCosmetic(player.getInventory().getItemInOffHand())) return;
-            int amount = currentItemSaved.getAmount();
-            if (!all) {
-                if(amount <= 1) {
-                    currentItemSaved = null;
-                } else {
-                    currentItemSaved.setAmount(amount - 1);
-                }
-            }else {
-                currentItemSaved = null;
-            }
-            return;
-        }
+        
         ItemStack getItem = currentItemSaved.clone();
         int amount = getItem.getAmount();
         if (!all) {
@@ -191,6 +170,13 @@ public class WStick extends Cosmetic implements CosmeticInventory {
         itemEntity.setThrower(player.getUniqueId());
         itemEntity.setVelocity(Utils.getItemDropVelocity(player));
         itemEntity.setPickupDelay(40);
+        
+        if(!overlaps) {
+            MagicCosmetics.getInstance().getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> {
+                player.getInventory().setItemInOffHand(getItemPlaceholders(player));
+                player.updateInventory();
+            });
+        }
     }
 
     private ItemStack combinedItems(ItemStack originalItem) {
@@ -291,15 +277,18 @@ public class WStick extends Cosmetic implements CosmeticInventory {
                 player.getInventory().setItemInOffHand(currentItemSaved.clone());
                 currentItemSaved = null;
             }
+            player.updateInventory();
             return;
         }
         if(currentItemSaved != null){
             //Clear offhand With offhand item save in cache
             player.getInventory().setItemInOffHand(currentItemSaved.clone());
             currentItemSaved = null;
+            player.updateInventory();
             return;
         }
         player.getInventory().setItemInOffHand(null);
+        player.updateInventory();
     }
 
     public boolean isOverlaps() {

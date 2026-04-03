@@ -254,6 +254,8 @@ public class SQLite extends SQL {
                     PlayerBalloon.updatePlayerBalloon(player);
                     CustomSpray.updateSpray(player);
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        PlayerData current = PlayerData.getPlayerIfPresent(player);
+                        if(current != playerData) return;
                         EntityBag.updateEntityBag(player);
                         EntityBalloon.updateEntityBalloon(player);
                         playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));

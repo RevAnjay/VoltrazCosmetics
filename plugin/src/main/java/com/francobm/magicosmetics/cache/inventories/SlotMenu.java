@@ -296,7 +296,7 @@ public class SlotMenu {
                 MagicCosmetics.getInstance().getCosmeticsManager().previewCosmetic(player, cosmetic);
             }
             if(!cosmetic.isColorBlocked()) {
-                MagicCosmetics.getInstance().getCosmeticsManager().equipCosmetic(player, cosmetic, null);
+                MagicCosmetics.getInstance().getCosmeticsManager().equipCosmetic(player, cosmetic.getId(), null, false);
             }
             closeMenu(player);
             return;

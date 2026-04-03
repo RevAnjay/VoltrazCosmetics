@@ -37,6 +37,16 @@ public class EntityBalloonHandler extends EntityBalloon {
     private final double SQUARED_WALKING;
     private final double SQUARED_DISTANCE;
 
+    // Reusable scratch objects to avoid per-tick GC pressure
+    private final Location tempPlayerLoc = new Location(null, 0, 0, 0);
+    private final Location tempStandLoc = new Location(null, 0, 0, 0);
+    private final Location tempDistance1 = new Location(null, 0, 0, 0);
+    private final Location tempDistance2 = new Location(null, 0, 0, 0);
+    private final Location tempStandTo = new Location(null, 0, 0, 0);
+    private final Vector tempStandDir = new Vector();
+    private final Vector tempLineBetween = new Vector();
+    private final Vector tempDistVec = new Vector();
+
     public EntityBalloonHandler(Entity entity, double space, double distance, boolean bigHead, boolean invisibleLeash) {
         players = new CopyOnWriteArrayList<>(new ArrayList<>());
         this.uuid = entity.getUniqueId();
@@ -180,6 +190,15 @@ public class EntityBalloonHandler extends EntityBalloon {
 
     private final double CATCH_UP_INCREMENTS = .27; //.25
     private double CATCH_UP_INCREMENTS_DISTANCE = CATCH_UP_INCREMENTS;
+    private void copyLocation(Location src, Location dst) {
+        dst.setWorld(src.getWorld());
+        dst.setX(src.getX());
+        dst.setY(src.getY());
+        dst.setZ(src.getZ());
+        dst.setYaw(src.getYaw());
+        dst.setPitch(src.getPitch());
+    }
+
     @Override
     public void update(){
         if(isBigHead()){
@@ -189,35 +208,61 @@ public class EntityBalloonHandler extends EntityBalloon {
         org.bukkit.entity.LivingEntity owner = getEntity();
         if(armorStand == null) return;
         if(leashed == null) return;
-        Location playerLoc = owner.getLocation().clone().add(0, space, 0);
-        Location stand = leashed.getBukkitEntity().getLocation();
-        Vector standDir = owner.getEyeLocation().clone().subtract(stand).toVector();
-        Location distance2 = stand.clone();
-        Location distance1 = owner.getLocation().clone();
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
-            Vector lineBetween = playerLoc.clone().subtract(stand).toVector();
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+        // Reuse scratch locations instead of clone()
+        Location ownerLoc = owner.getLocation();
+        copyLocation(ownerLoc, tempPlayerLoc);
+        tempPlayerLoc.add(0, space, 0);
+
+        Location stand = leashed.getBukkitEntity().getLocation();
+        copyLocation(stand, tempStandLoc);
+
+        Location eyeLoc = owner.getEyeLocation();
+        tempStandDir.setX(eyeLoc.getX() - stand.getX());
+        tempStandDir.setY(eyeLoc.getY() - stand.getY());
+        tempStandDir.setZ(eyeLoc.getZ() - stand.getZ());
+
+        copyLocation(stand, tempDistance2);
+        copyLocation(ownerLoc, tempDistance1);
+
+        double distSq = tempDistance1.distanceSquared(tempDistance2);
+
+        if(distSq > SQUARED_WALKING){
+            tempLineBetween.setX(tempPlayerLoc.getX() - stand.getX());
+            tempLineBetween.setY(tempPlayerLoc.getY() - stand.getY());
+            tempLineBetween.setZ(tempPlayerLoc.getZ() - stand.getZ());
+            if (tempStandDir.lengthSquared() > 0) {
+                tempStandDir.normalize();
             }
-            Vector distVec = lineBetween.clone().normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
-            Location standTo = stand.clone().setDirection(standDir.setY(0)).add(distVec.clone());
-            Location newLocation = standTo.clone();
-            teleport(newLocation);
+            double len = tempLineBetween.length();
+            if (len > 0) {
+                tempDistVec.setX(tempLineBetween.getX() / len * CATCH_UP_INCREMENTS_DISTANCE);
+                tempDistVec.setY(tempLineBetween.getY() / len * CATCH_UP_INCREMENTS_DISTANCE);
+                tempDistVec.setZ(tempLineBetween.getZ() / len * CATCH_UP_INCREMENTS_DISTANCE);
+            } else {
+                tempDistVec.setX(0); tempDistVec.setY(0); tempDistVec.setZ(0);
+            }
+            copyLocation(stand, tempStandTo);
+            tempStandDir.setY(0);
+            tempStandTo.setDirection(tempStandDir);
+            tempStandTo.add(tempDistVec);
+            teleport(tempStandTo);
         }else {
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+            if (tempStandDir.lengthSquared() > 0) {
+                tempStandDir.normalize();
             }
-            Location standToLoc = stand.clone().setDirection(standDir.setY(0));
+            copyLocation(stand, tempStandTo);
+            tempStandDir.setY(0);
+            tempStandTo.setDirection(tempStandDir);
             if (!floatLoop) {
                 y += 0.01;
-                standToLoc.add(0, 0.01, 0);
+                tempStandTo.add(0, 0.01, 0);
                 if (y > 0.10) {
                     floatLoop = true;
                 }
             } else {
                 y -= 0.01;
-                standToLoc.subtract(0, 0.01, 0);
+                tempStandTo.subtract(0, 0.01, 0);
                 if (y < (-0.11 + 0)) {
                     floatLoop = false;
                     rotate *= -1;
@@ -237,8 +282,7 @@ public class EntityBalloonHandler extends EntityBalloon {
                     rotateLoop = false;
                 }
             }
-            Location newLocation = standToLoc.clone();
-            teleport(newLocation);
+            teleport(tempStandTo);
         }
         for(UUID uuid : players){
             Player player = Bukkit.getPlayer(uuid);
@@ -252,7 +296,7 @@ public class EntityBalloonHandler extends EntityBalloon {
             p.connection.send(ReflectionUtils.createTeleportPacket(armorStand));
         }
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
+        if(distSq > SQUARED_WALKING){
             if(!heightLoop){
                 height += 0.01;
                 armorStand.setBodyPose(new Rotations(ReflectionUtils.rotX(armorStand.getBodyPose()) - 0.8f, ReflectionUtils.rotY(armorStand.getBodyPose()), ReflectionUtils.rotZ(armorStand.getBodyPose())));
@@ -267,7 +311,7 @@ public class EntityBalloonHandler extends EntityBalloon {
             }
 
         }
-        if(distance1.distanceSquared(distance2) > SQUARED_DISTANCE){
+        if(distSq > SQUARED_DISTANCE){
             CATCH_UP_INCREMENTS_DISTANCE += 0.01;
         }else{
             CATCH_UP_INCREMENTS_DISTANCE = CATCH_UP_INCREMENTS;
@@ -278,36 +322,61 @@ public class EntityBalloonHandler extends EntityBalloon {
         org.bukkit.entity.LivingEntity owner = getEntity();
         if(armorStand == null) return;
         if(leashed == null) return;
-        Location playerLoc = owner.getLocation().clone().add(0, space, 0);
-        Location stand = leashed.getBukkitEntity().getLocation();
-        Vector standDir = owner.getEyeLocation().clone().subtract(stand).toVector();
-        Location distance2 = stand.clone();
-        Location distance1 = owner.getLocation().clone();
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
-            Vector lineBetween = playerLoc.clone().subtract(stand).toVector();
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+        Location ownerLoc = owner.getLocation();
+        copyLocation(ownerLoc, tempPlayerLoc);
+        tempPlayerLoc.add(0, space, 0);
+
+        Location stand = leashed.getBukkitEntity().getLocation();
+        copyLocation(stand, tempStandLoc);
+
+        Location eyeLoc = owner.getEyeLocation();
+        tempStandDir.setX(eyeLoc.getX() - stand.getX());
+        tempStandDir.setY(eyeLoc.getY() - stand.getY());
+        tempStandDir.setZ(eyeLoc.getZ() - stand.getZ());
+
+        copyLocation(stand, tempDistance2);
+        copyLocation(ownerLoc, tempDistance1);
+
+        double distSq = tempDistance1.distanceSquared(tempDistance2);
+
+        if(distSq > SQUARED_WALKING){
+            tempLineBetween.setX(tempPlayerLoc.getX() - stand.getX());
+            tempLineBetween.setY(tempPlayerLoc.getY() - stand.getY());
+            tempLineBetween.setZ(tempPlayerLoc.getZ() - stand.getZ());
+            if (tempStandDir.lengthSquared() > 0) {
+                tempStandDir.normalize();
             }
-            Vector distVec = lineBetween.clone().normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
-            Location standTo = stand.clone().setDirection(standDir.setY(0)).add(distVec.clone());
-            Location newLocation = standTo.clone();
-            ReflectionUtils.absMoveTo(leashed, newLocation.getX(), newLocation.getY(), newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
-            ReflectionUtils.absMoveTo(armorStand, newLocation.getX(), newLocation.getY() - 1.3, newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
+            double len = tempLineBetween.length();
+            if (len > 0) {
+                tempDistVec.setX(tempLineBetween.getX() / len * CATCH_UP_INCREMENTS_DISTANCE);
+                tempDistVec.setY(tempLineBetween.getY() / len * CATCH_UP_INCREMENTS_DISTANCE);
+                tempDistVec.setZ(tempLineBetween.getZ() / len * CATCH_UP_INCREMENTS_DISTANCE);
+            } else {
+                tempDistVec.setX(0); tempDistVec.setY(0); tempDistVec.setZ(0);
+            }
+            copyLocation(stand, tempStandTo);
+            tempStandDir.setY(0);
+            tempStandTo.setDirection(tempStandDir);
+            tempStandTo.add(tempDistVec);
+            ReflectionUtils.absMoveTo(leashed, tempStandTo.getX(), tempStandTo.getY(), tempStandTo.getZ(), tempStandTo.getYaw(), tempStandTo.getPitch());
+            ReflectionUtils.absMoveTo(armorStand, tempStandTo.getX(), tempStandTo.getY() - 1.3, tempStandTo.getZ(), tempStandTo.getYaw(), tempStandTo.getPitch());
         }else {
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+            if (tempStandDir.lengthSquared() > 0) {
+                tempStandDir.normalize();
             }
-            Location standToLoc = stand.clone().setDirection(standDir.setY(0));
+            copyLocation(stand, tempStandTo);
+            tempStandDir.setY(0);
+            tempStandTo.setDirection(tempStandDir);
             if (!floatLoop) {
                 y += 0.01;
-                standToLoc.add(0, 0.01, 0);
+                tempStandTo.add(0, 0.01, 0);
                 if (y > 0.10) {
                     floatLoop = true;
                 }
             } else {
                 y -= 0.01;
-                standToLoc.subtract(0, 0.01, 0);
+                tempStandTo.subtract(0, 0.01, 0);
                 if (y < (-0.11 + 0)) {
                     floatLoop = false;
                     rotate *= -1;
@@ -327,9 +396,8 @@ public class EntityBalloonHandler extends EntityBalloon {
                     rotateLoop = false;
                 }
             }
-            Location newLocation = standToLoc.clone();
-            ReflectionUtils.absMoveTo(leashed, newLocation.getX(), newLocation.getY(), newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
-            ReflectionUtils.absMoveTo(armorStand, newLocation.getX(), newLocation.getY() - 1.3, newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch());
+            ReflectionUtils.absMoveTo(leashed, tempStandTo.getX(), tempStandTo.getY(), tempStandTo.getZ(), tempStandTo.getYaw(), tempStandTo.getPitch());
+            ReflectionUtils.absMoveTo(armorStand, tempStandTo.getX(), tempStandTo.getY() - 1.3, tempStandTo.getZ(), tempStandTo.getYaw(), tempStandTo.getPitch());
         }
         for(UUID uuid : players){
             Player player = Bukkit.getPlayer(uuid);
@@ -343,7 +411,7 @@ public class EntityBalloonHandler extends EntityBalloon {
             p.connection.send(ReflectionUtils.createTeleportPacket(armorStand));
         }
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
+        if(distSq > SQUARED_WALKING){
             if(!heightLoop){
                 height += 0.01;
                 armorStand.setHeadPose(new Rotations(ReflectionUtils.rotX(armorStand.getHeadPose()) - 0.8f, ReflectionUtils.rotY(armorStand.getHeadPose()), ReflectionUtils.rotZ(armorStand.getHeadPose())));
@@ -358,7 +426,7 @@ public class EntityBalloonHandler extends EntityBalloon {
             }
 
         }
-        if(distance1.distanceSquared(distance2) > SQUARED_DISTANCE){
+        if(distSq > SQUARED_DISTANCE){
             CATCH_UP_INCREMENTS_DISTANCE += 0.01;
         }else{
             CATCH_UP_INCREMENTS_DISTANCE = CATCH_UP_INCREMENTS;

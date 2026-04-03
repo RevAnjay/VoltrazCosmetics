@@ -185,28 +185,40 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             spawn(false);
             return;
         }
-        Location playerLoc = owner.getLocation().clone().add(0, space, 0);
-        Location stand = leashed.getBukkitEntity().getLocation().clone();
-        Vector standDir = owner.getEyeLocation().clone().subtract(stand).toVector();
-        if (!standDir.equals(new Vector())) {
-            standDir.normalize();
+        Location ownerLoc = owner.getLocation();
+        tempPlayerLoc.setWorld(ownerLoc.getWorld());
+        tempPlayerLoc.setX(ownerLoc.getX());
+        tempPlayerLoc.setY(ownerLoc.getY() + space);
+        tempPlayerLoc.setZ(ownerLoc.getZ());
+        Location standBukkit = leashed.getBukkitEntity().getLocation();
+        tempStandLoc.setWorld(standBukkit.getWorld());
+        tempStandLoc.setX(standBukkit.getX());
+        tempStandLoc.setY(standBukkit.getY());
+        tempStandLoc.setZ(standBukkit.getZ());
+        Location eyeLoc = owner.getEyeLocation();
+        tempStandDir.setX(eyeLoc.getX() - tempStandLoc.getX());
+        tempStandDir.setY(eyeLoc.getY() - tempStandLoc.getY());
+        tempStandDir.setZ(eyeLoc.getZ() - tempStandLoc.getZ());
+        if (!tempStandDir.equals(ZERO_VEC)) {
+            tempStandDir.normalize();
         }
-        Location standToLoc = playerLoc.setDirection(standDir.setY(2));
+        tempStandDir.setY(2);
+        tempPlayerLoc.setDirection(tempStandDir);
         if (!floatLoop) {
             y += 0.01;
-            standToLoc.add(0, 0.01, 0);
+            tempPlayerLoc.setY(tempPlayerLoc.getY() + 0.01);
             if (y > 0.10) {
                 floatLoop = true;
             }
         } else {
             y -= 0.01;
-            standToLoc.subtract(0, 0.01, 0);
+            tempPlayerLoc.setY(tempPlayerLoc.getY() - 0.01);
             if (y < (-0.11 + 0)) {
                 floatLoop = false;
                 rotate *= -1;
             }
         }
-        teleport(standToLoc);
+        teleport(tempPlayerLoc);
         if (!rotateLoop) {
             rot += 0.02;
             armorStand.setBodyPose(new Rotations(armorStand.getBodyPose().getX() - 0.5f, armorStand.getBodyPose().getY(), armorStand.getBodyPose().getZ() + rotate));
@@ -264,41 +276,74 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             spawn(false);
             return;
         }
-        Location playerLoc = owner.getLocation().clone().add(0, space, 0);
-        Location stand = leashed.getBukkitEntity().getLocation().clone();
-        Vector standDir = owner.getEyeLocation().clone().subtract(stand).toVector();
-        Location distance2 = stand.clone();
-        Location distance1 = owner.getLocation().clone();
+        Location ownerLoc = owner.getLocation();
+        tempPlayerLoc.setWorld(ownerLoc.getWorld());
+        tempPlayerLoc.setX(ownerLoc.getX());
+        tempPlayerLoc.setY(ownerLoc.getY() + space);
+        tempPlayerLoc.setZ(ownerLoc.getZ());
+        Location standBukkit = leashed.getBukkitEntity().getLocation();
+        tempStandLoc.setWorld(standBukkit.getWorld());
+        tempStandLoc.setX(standBukkit.getX());
+        tempStandLoc.setY(standBukkit.getY());
+        tempStandLoc.setZ(standBukkit.getZ());
+        Location eyeLoc = owner.getEyeLocation();
+        tempStandDir.setX(eyeLoc.getX() - tempStandLoc.getX());
+        tempStandDir.setY(eyeLoc.getY() - tempStandLoc.getY());
+        tempStandDir.setZ(eyeLoc.getZ() - tempStandLoc.getZ());
+        tempDistLoc1.setWorld(ownerLoc.getWorld());
+        tempDistLoc1.setX(ownerLoc.getX());
+        tempDistLoc1.setY(ownerLoc.getY());
+        tempDistLoc1.setZ(ownerLoc.getZ());
+        double distSq = tempDistLoc1.distanceSquared(tempStandLoc);
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
-            Vector lineBetween = playerLoc.clone().subtract(stand).toVector();
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+        if(distSq > SQUARED_WALKING){
+            tempLineBetween.setX(tempPlayerLoc.getX() - tempStandLoc.getX());
+            tempLineBetween.setY(tempPlayerLoc.getY() - tempStandLoc.getY());
+            tempLineBetween.setZ(tempPlayerLoc.getZ() - tempStandLoc.getZ());
+            if (!tempStandDir.equals(ZERO_VEC)) {
+                tempStandDir.normalize();
             }
-            Vector distVec = lineBetween.clone().normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
-            Location standTo = stand.clone().setDirection(standDir.setY(0)).add(distVec.clone());
-            Location newLocation = standTo.clone();
-            teleport(newLocation);
+            tempDistVec.setX(tempLineBetween.getX());
+            tempDistVec.setY(tempLineBetween.getY());
+            tempDistVec.setZ(tempLineBetween.getZ());
+            tempDistVec.normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
+            tempStandDir.setY(0);
+            tempTeleportLoc.setWorld(tempStandLoc.getWorld());
+            tempTeleportLoc.setX(tempStandLoc.getX() + tempDistVec.getX());
+            tempTeleportLoc.setY(tempStandLoc.getY() + tempDistVec.getY());
+            tempTeleportLoc.setZ(tempStandLoc.getZ() + tempDistVec.getZ());
+            tempTeleportLoc.setDirection(tempStandDir);
+            teleport(tempTeleportLoc);
         }else {
-            Vector lineBetween = playerLoc.clone().subtract(stand).toVector();
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+            tempLineBetween.setX(tempPlayerLoc.getX() - tempStandLoc.getX());
+            tempLineBetween.setY(tempPlayerLoc.getY() - tempStandLoc.getY());
+            tempLineBetween.setZ(tempPlayerLoc.getZ() - tempStandLoc.getZ());
+            if (!tempStandDir.equals(ZERO_VEC)) {
+                tempStandDir.normalize();
             }
-            Vector distVec = lineBetween.clone().normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
-            double distY = distVec.getY();
+            tempDistVec.setX(tempLineBetween.getX());
+            tempDistVec.setY(tempLineBetween.getY());
+            tempDistVec.setZ(tempLineBetween.getZ());
+            tempDistVec.normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
+            double distY = tempDistVec.getY();
             if(owner.isSneaking()){
                 distY -= 0.13;
             }
-            Location standToLoc = stand.clone().setDirection(standDir.setY(0)).add(0, distY, 0);
+            tempStandDir.setY(0);
+            tempTeleportLoc.setWorld(tempStandLoc.getWorld());
+            tempTeleportLoc.setX(tempStandLoc.getX());
+            tempTeleportLoc.setY(tempStandLoc.getY() + distY);
+            tempTeleportLoc.setZ(tempStandLoc.getZ());
+            tempTeleportLoc.setDirection(tempStandDir);
             if (!floatLoop) {
                 y += 0.01;
-                standToLoc.add(0, 0.01, 0);
+                tempTeleportLoc.setY(tempTeleportLoc.getY() + 0.01);
                 if (y > 0.10) {
                     floatLoop = true;
                 }
             } else {
                 y -= 0.01;
-                standToLoc.subtract(0, 0.01, 0);
+                tempTeleportLoc.setY(tempTeleportLoc.getY() - 0.01);
                 if (y < (-0.11 + 0)) {
                     floatLoop = false;
                     rotate *= -1;
@@ -318,8 +363,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                     rotateLoop = false;
                 }
             }
-            Location newLocation = standToLoc.clone();
-            teleport(newLocation);
+            teleport(tempTeleportLoc);
         }
         boolean sendLeash = lendEntityDirty && !invisibleLeash;
         if (sendLeash) lendEntityDirty = false;
@@ -338,7 +382,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             p.connection.send(new ClientboundTeleportEntityPacket(armorStand));
         }
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
+        if(distSq > SQUARED_WALKING){
             if(!heightLoop){
                 height += 0.01;
                 armorStand.setBodyPose(new Rotations(armorStand.getBodyPose().getX() - 0.8f, armorStand.getBodyPose().getY(), armorStand.getBodyPose().getZ()));
@@ -353,7 +397,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             }
 
         }
-        if(distance1.distanceSquared(distance2) > SQUARED_DISTANCE){
+        if(distSq > SQUARED_DISTANCE){
             CATCH_UP_INCREMENTS_DISTANCE += 0.01;
         }else{
             CATCH_UP_INCREMENTS_DISTANCE = CATCH_UP_INCREMENTS;
@@ -369,35 +413,63 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             spawn(false);
             return;
         }
-        Location playerLoc = owner.getLocation().clone().add(0, space, 0);
-        Location stand = leashed.getBukkitEntity().getLocation();
-        Vector standDir = owner.getEyeLocation().clone().subtract(stand).toVector();
-        Location distance2 = stand.clone();
-        Location distance1 = owner.getLocation().clone();
+        Location ownerLoc = owner.getLocation();
+        tempPlayerLoc.setWorld(ownerLoc.getWorld());
+        tempPlayerLoc.setX(ownerLoc.getX());
+        tempPlayerLoc.setY(ownerLoc.getY() + space);
+        tempPlayerLoc.setZ(ownerLoc.getZ());
+        Location standBukkit = leashed.getBukkitEntity().getLocation();
+        tempStandLoc.setWorld(standBukkit.getWorld());
+        tempStandLoc.setX(standBukkit.getX());
+        tempStandLoc.setY(standBukkit.getY());
+        tempStandLoc.setZ(standBukkit.getZ());
+        Location eyeLoc = owner.getEyeLocation();
+        tempStandDir.setX(eyeLoc.getX() - tempStandLoc.getX());
+        tempStandDir.setY(eyeLoc.getY() - tempStandLoc.getY());
+        tempStandDir.setZ(eyeLoc.getZ() - tempStandLoc.getZ());
+        tempDistLoc1.setWorld(ownerLoc.getWorld());
+        tempDistLoc1.setX(ownerLoc.getX());
+        tempDistLoc1.setY(ownerLoc.getY());
+        tempDistLoc1.setZ(ownerLoc.getZ());
+        double distSq = tempDistLoc1.distanceSquared(tempStandLoc);
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
-            Vector lineBetween = playerLoc.clone().subtract(stand).toVector();
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+        if(distSq > SQUARED_WALKING){
+            tempLineBetween.setX(tempPlayerLoc.getX() - tempStandLoc.getX());
+            tempLineBetween.setY(tempPlayerLoc.getY() - tempStandLoc.getY());
+            tempLineBetween.setZ(tempPlayerLoc.getZ() - tempStandLoc.getZ());
+            if (!tempStandDir.equals(ZERO_VEC)) {
+                tempStandDir.normalize();
             }
-            Vector distVec = lineBetween.clone().normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
-            Location standTo = stand.clone().setDirection(standDir.setY(0)).add(distVec.clone());
-            Location newLocation = standTo.clone();
-            teleport(newLocation);
+            tempDistVec.setX(tempLineBetween.getX());
+            tempDistVec.setY(tempLineBetween.getY());
+            tempDistVec.setZ(tempLineBetween.getZ());
+            tempDistVec.normalize().multiply(CATCH_UP_INCREMENTS_DISTANCE);
+            tempStandDir.setY(0);
+            tempTeleportLoc.setWorld(tempStandLoc.getWorld());
+            tempTeleportLoc.setX(tempStandLoc.getX() + tempDistVec.getX());
+            tempTeleportLoc.setY(tempStandLoc.getY() + tempDistVec.getY());
+            tempTeleportLoc.setZ(tempStandLoc.getZ() + tempDistVec.getZ());
+            tempTeleportLoc.setDirection(tempStandDir);
+            teleport(tempTeleportLoc);
         }else {
-            if (!standDir.equals(new Vector())) {
-                standDir.normalize();
+            if (!tempStandDir.equals(ZERO_VEC)) {
+                tempStandDir.normalize();
             }
-            Location standToLoc = stand.clone().setDirection(standDir.setY(0));
+            tempStandDir.setY(0);
+            tempTeleportLoc.setWorld(tempStandLoc.getWorld());
+            tempTeleportLoc.setX(tempStandLoc.getX());
+            tempTeleportLoc.setY(tempStandLoc.getY());
+            tempTeleportLoc.setZ(tempStandLoc.getZ());
+            tempTeleportLoc.setDirection(tempStandDir);
             if (!floatLoop) {
                 y += 0.01;
-                standToLoc.add(0, 0.01, 0);
+                tempTeleportLoc.setY(tempTeleportLoc.getY() + 0.01);
                 if (y > 0.10) {
                     floatLoop = true;
                 }
             } else {
                 y -= 0.01;
-                standToLoc.subtract(0, 0.01, 0);
+                tempTeleportLoc.setY(tempTeleportLoc.getY() - 0.01);
                 if (y < (-0.11 + 0)) {
                     floatLoop = false;
                     rotate *= -1;
@@ -417,8 +489,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                     rotateLoop = false;
                 }
             }
-            Location newLocation = standToLoc.clone();
-            teleport(newLocation);
+            teleport(tempTeleportLoc);
         }
         boolean sendLeash = lendEntityDirty && !invisibleLeash;
         if (sendLeash) lendEntityDirty = false;
@@ -437,7 +508,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             p.connection.send(new ClientboundTeleportEntityPacket(armorStand));
         }
 
-        if(distance1.distanceSquared(distance2) > SQUARED_WALKING){
+        if(distSq > SQUARED_WALKING){
             if(!heightLoop){
                 height += 0.01;
                 armorStand.setHeadPose(new Rotations(armorStand.getHeadPose().getX() - 0.8f, armorStand.getHeadPose().getY(), armorStand.getHeadPose().getZ()));
@@ -452,7 +523,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             }
 
         }
-        if(distance1.distanceSquared(distance2) > SQUARED_DISTANCE){
+        if(distSq > SQUARED_DISTANCE){
             CATCH_UP_INCREMENTS_DISTANCE += 0.01;
         }else{
             CATCH_UP_INCREMENTS_DISTANCE = CATCH_UP_INCREMENTS;

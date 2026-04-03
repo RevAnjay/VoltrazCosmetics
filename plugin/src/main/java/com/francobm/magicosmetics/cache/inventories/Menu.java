@@ -31,7 +31,7 @@ public abstract class Menu implements InventoryHolder {
 
     public Menu(PlayerData playerData, Menu menu) {
         this.id = menu.id;
-        this.contentMenu = new ContentMenu(menu.getContentMenu().getTitle(), menu.getContentMenu().getSize(), menu.getContentMenu().getInventoryType(), menu.getContentMenu().getSlotMenu(), menu.getContentMenu().getPreviewSlot(), menu.getContentMenu().getResultSlot());
+        this.contentMenu = menu.getContentMenu().getClone();
         this.permission = menu.permission;
         this.playerData = playerData;
     }

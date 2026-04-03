@@ -6,12 +6,22 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class PlayerBalloon {
+    // Reusable scratch objects to avoid per-tick GC allocation
+    protected static final Vector ZERO_VEC = new Vector(0, 0, 0);
+    protected final Location tempPlayerLoc = new Location(null, 0, 0, 0);
+    protected final Location tempStandLoc = new Location(null, 0, 0, 0);
+    protected final Location tempDistLoc1 = new Location(null, 0, 0, 0);
+    protected final Location tempTeleportLoc = new Location(null, 0, 0, 0);
+    protected final Vector tempStandDir = new Vector();
+    protected final Vector tempLineBetween = new Vector();
+    protected final Vector tempDistVec = new Vector();
     public static Map<UUID, PlayerBalloon> playerBalloons = new ConcurrentHashMap<>();
     protected UUID uuid;
     protected List<UUID> viewers;
