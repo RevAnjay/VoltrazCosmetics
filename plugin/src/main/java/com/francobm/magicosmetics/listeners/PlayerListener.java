@@ -2,18 +2,14 @@ package com.francobm.magicosmetics.listeners;
 
 import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.api.Cosmetic;
-import com.francobm.magicosmetics.api.CosmeticType;
 import com.francobm.magicosmetics.api.SprayKeys;
 import com.francobm.magicosmetics.cache.*;
-import com.francobm.magicosmetics.cache.EntityIdCache;
 import com.francobm.magicosmetics.cache.cosmetics.CosmeticInventory;
 import com.francobm.magicosmetics.events.CosmeticInventoryUpdateEvent;
-import com.francobm.magicosmetics.events.PlayerChangeBlacklistEvent;
 import com.francobm.magicosmetics.events.PlayerDataLoadEvent;
 import com.francobm.magicosmetics.utils.Utils;
 import com.francobm.magicosmetics.utils.XMaterial;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -28,13 +24,10 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
-import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
 import java.util.Iterator;
-import java.util.Random;
 
 public class PlayerListener implements Listener {
     private final MagicCosmetics plugin = MagicCosmetics.getInstance();
@@ -63,8 +56,8 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent event){
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
-        if(!playerData.isZone()) return;
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || !playerData.isZone()) return;
         event.setCancelled(true);
     }
 
@@ -72,26 +65,33 @@ public class PlayerListener implements Listener {
     public void onQuit(PlayerQuitEvent event){
         Player player = event.getPlayer();
         EntityIdCache.unregister(player);
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
         /*if(plugin.isHuskSync()){
             plugin.getHuskSync().saveDataToPlayer(playerData);
             return;
         }*/
-        plugin.getVersion().getPacketReader().removePlayer(player);
+        // plugin.getVersion().getPacketReader().removePlayer(player);
+        try {
+            plugin.getVersion().getPacketReader().removePlayer(event.getPlayer());
+        } catch (Exception e) {
+            MagicCosmetics.getInstance().getLogger().warning("Failed to remove packet reader for " + event.getPlayer().getName() + " - " + e.getMessage());
+        }
         if(playerData.isZone()){
             playerData.exitZoneSync();
         }
         // Restore saved helmet/offhand items before server saves player data
         // This prevents the cosmetic item from being saved as the player's helmet
         playerData.clearCosmeticsToSaveData();
-        plugin.getSql().savePlayerAsync(playerData).thenRun(() -> PlayerData.removePlayer(playerData));
+
+        PlayerData.removePlayer(playerData);
+        plugin.getSql().savePlayerAsync(playerData);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onTeleport(PlayerTeleportEvent event){
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
         if(playerData.isZone()){
             if(!playerData.isSpectator()) return;
@@ -122,7 +122,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
         playerData.clearDeathBackup();
         playerData.activeCosmeticsInventory();
@@ -131,7 +131,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onDrop(PlayerDropItemEvent event){
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
         if(playerData.getSpray() != null) {
             if (plugin.getSprayKey() == null) return;
@@ -157,7 +157,7 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDead(PlayerDeathEvent event){
         Player player = event.getEntity();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
         playerData.clearCosmeticsInUse(false);
         if(event.getKeepInventory()) {
@@ -189,10 +189,12 @@ public class PlayerListener implements Listener {
             if(itemStack == null) continue;
             if(playerData.getHat() != null && playerData.getHat().isCosmetic(itemStack)){
                 stackList.remove();
+                removedHelmetDupe = true;
                 continue;
             }
             if(playerData.getWStick() != null && playerData.getWStick().isCosmetic(itemStack)){
                 stackList.remove();
+                removedWStickDupe = true;
                 continue;
             }
             if(!removedHelmetDupe && savedHelmet != null && itemStack.isSimilar(savedHelmet)){
@@ -206,14 +208,15 @@ public class PlayerListener implements Listener {
             }
         }
 
-        if(savedHelmet != null) event.getDrops().add(savedHelmet);
-        if(savedWStick != null) event.getDrops().add(savedWStick);
+        if(savedHelmet != null && removedHelmetDupe) event.getDrops().add(savedHelmet);
+        if(savedWStick != null && removedWStickDupe) event.getDrops().add(savedWStick);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onItemFrame(PlayerInteractEntityEvent event){
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
         if(event.getHand() != EquipmentSlot.OFF_HAND) return;
         if(playerData.getWStick() == null) return;
         event.setCancelled(true);
@@ -223,8 +226,8 @@ public class PlayerListener implements Listener {
     public void onBlock(BlockPlaceEvent event) {
         if(event.getHand() != EquipmentSlot.OFF_HAND) return;
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
-        if(playerData.getWStick() == null) return;
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || playerData.getWStick() == null) return;
         if(!playerData.getWStick().isCosmetic(event.getItemInHand())) return;
         event.setCancelled(true);
     }
@@ -235,8 +238,8 @@ public class PlayerListener implements Listener {
         if(Utils.isNewerThan1206()) {
             if(!(event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR)) {
                 Player player = event.getPlayer();
-                PlayerData playerData = PlayerData.getPlayer(player);
-                if (playerData.getWStick() == null) return;
+                PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+                if (playerData == null || playerData.getWStick() == null) return;
                 ItemStack itemStack = event.getItem();
                 if (itemStack == null) return;
                 String nbt = plugin.getVersion().isNBTCosmetic(itemStack);
@@ -247,8 +250,8 @@ public class PlayerListener implements Listener {
         }
         if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
-        if(playerData.getWStick() == null) return;
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || playerData.getWStick() == null) return;
         ItemStack itemStack = event.getItem();
         if(itemStack == null) return;
         String nbt = plugin.getVersion().isNBTCosmetic(itemStack);
@@ -259,7 +262,8 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInteract(PlayerInteractEvent event){
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
         ItemStack itemStack = event.getItem();
         if(itemStack != null) {
             if(itemStack.getType() == XMaterial.BLAZE_ROD.parseMaterial()){
@@ -298,7 +302,7 @@ public class PlayerListener implements Listener {
                         // Delayed inventory update to prevent vanilla armor equip bypassing cancellation (1.21.8+)
                         final ItemStack savedHelmet = playerData.getHat().getCurrentItemSaved();
                         plugin.getServer().getScheduler().runTask(plugin, () -> {
-                            PlayerData pd = PlayerData.getPlayer(player);
+                            PlayerData pd = PlayerData.getPlayerIfPresent(player);
                             if(pd == null || pd.getHat() == null) return;
                             pd.getHat().update();
                             player.updateInventory();
@@ -330,7 +334,8 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChange(PlayerSwapHandItemsEvent event){
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
         ItemStack mainHand = event.getMainHandItem();
         if(playerData.getWStick() != null) {
             event.setCancelled(true);
@@ -367,7 +372,8 @@ public class PlayerListener implements Listener {
         ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
         ItemStack oldItem = player.getInventory().getItem(event.getPreviousSlot());
         if (oldItem != null) {
-            PlayerData playerData = PlayerData.getPlayer(player);
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData == null) return;
             if (playerData.getHat() != null) {
                 if (playerData.getHat().isCosmetic(oldItem)) {
                     player.getInventory().removeItem(oldItem);
@@ -380,7 +386,8 @@ public class PlayerListener implements Listener {
             }
         }
         if(newItem != null) {
-            PlayerData playerData = PlayerData.getPlayer(player);
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData == null) return;
             if (playerData.getHat() != null) {
                 if (playerData.getHat().isCosmetic(newItem)) {
                     player.getInventory().removeItem(newItem);
@@ -401,7 +408,8 @@ public class PlayerListener implements Listener {
     public void playerDrop(PlayerDropItemEvent event){
         Player player = event.getPlayer();
         Item item = event.getItemDrop();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
         if(playerData.getHat() != null) {
             if (playerData.getHat().isCosmetic(item.getItemStack())){
                 event.setCancelled(false);
@@ -420,7 +428,8 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChangeWorld(PlayerChangedWorldEvent event) {
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
         playerData.verifyWorldBlackList(plugin);
     }
 
@@ -428,7 +437,7 @@ public class PlayerListener implements Listener {
     public void onInteractInventory(CosmeticInventoryUpdateEvent event) {
         Player player = event.getPlayer();
         Cosmetic cosmetic = event.getCosmetic();
-        PlayerData pd = PlayerData.getPlayer(player);
+        PlayerData pd = PlayerData.getPlayerIfPresent(player);
         if(pd != null && pd.getEquip(event.getCosmeticType()) != cosmetic) return;
         if(cosmetic.isHideCosmetic()) return;
         ItemStack itemStack = event.getItemToChange();
@@ -477,7 +486,7 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onInventory(InventoryClickEvent event){
         Player player = (Player) event.getWhoClicked();
-        PlayerData playerData = PlayerData.getPlayer(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
         if(event.getClickedInventory() == null) return;
         if(event.getClickedInventory().getType() != InventoryType.PLAYER) {

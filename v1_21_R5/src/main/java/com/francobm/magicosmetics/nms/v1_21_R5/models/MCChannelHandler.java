@@ -16,24 +16,25 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.entity.LevelEntityGetter;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.UUID;
 
 public class MCChannelHandler extends ChannelDuplexHandler {
 
-    private final ServerPlayer player;
+    private final UUID playerUUID;
 
     public MCChannelHandler(ServerPlayer player){
-        this.player = player;
+        this.playerUUID = player.getUUID();
     }
+
+    private Player getBukkitPlayer() {
+        return Bukkit.getPlayer(playerUUID);
+    }
+
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if(msg instanceof ClientboundContainerSetSlotPacket) {
@@ -79,33 +80,37 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private boolean checkInZone(){
-        PlayerData playerData = PlayerData.getPlayer(player.getBukkitEntity());
+        Player player = getBukkitPlayer();
+        if(player == null) return false;
+        PlayerData playerData = getPlayerDataIfPresent(player);
+        if(playerData == null) return false;
         return playerData.isZone();
-    }
-
-    private boolean isOffHand(){
-        PlayerData playerData = PlayerData.getPlayer(player.getBukkitEntity());
-        return playerData.getWStick() != null;
     }
 
     private void openMenu() {
         MagicCosmetics plugin = MagicCosmetics.getInstance();
-        plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getCosmeticsManager().openMenu(player.getBukkitEntity(), plugin.getMainMenu()));
+        Player player = getBukkitPlayer();
+        if(player == null) return;
+        plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getCosmeticsManager().openMenu(player, plugin.getMainMenu()));
     }
 
     private void CallUpdateInvEvent(int slot, ItemStack itemStack) {
+        Player player = getBukkitPlayer();
+        if(player == null) return;
         MagicCosmetics plugin = MagicCosmetics.getInstance();
         CosmeticInventoryUpdateEvent event;
         if(slot == 5){
-            PlayerData playerData = PlayerData.getPlayer(player.getBukkitEntity());
+            PlayerData playerData = getPlayerDataIfPresent(player);
+            if(playerData == null) return;
             Hat hat = playerData.getHat();
             if(hat == null) return;
-            event = new CosmeticInventoryUpdateEvent(player.getBukkitEntity(), CosmeticType.HAT, hat, CraftItemStack.asBukkitCopy(itemStack));
+            event = new CosmeticInventoryUpdateEvent(player, CosmeticType.HAT, hat, CraftItemStack.asBukkitCopy(itemStack));
         }else if(slot == 45){
-            PlayerData playerData = PlayerData.getPlayer(player.getBukkitEntity());
+            PlayerData playerData = getPlayerDataIfPresent(player);
+            if(playerData == null) return;
             WStick wStick = playerData.getWStick();
             if(wStick == null) return;
-            event = new CosmeticInventoryUpdateEvent(player.getBukkitEntity(), CosmeticType.WALKING_STICK, wStick, CraftItemStack.asBukkitCopy(itemStack));
+            event = new CosmeticInventoryUpdateEvent(player, CosmeticType.WALKING_STICK, wStick, CraftItemStack.asBukkitCopy(itemStack));
         }else {
             return;
         }
@@ -116,19 +121,31 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     private ClientboundSetPassengersPacket handleEntityMount(ClientboundSetPassengersPacket packetPlayOutMount) {
         int id = packetPlayOutMount.getVehicle();
         int[] ids = packetPlayOutMount.getPassengers();
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.getServerLevel(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
         if(!(entity instanceof Player)) return packetPlayOutMount;
         Player otherPlayer = (Player) entity;
-        PlayerData playerData = PlayerData.getPlayer(otherPlayer);
-        if(playerData.getBag() == null) return packetPlayOutMount;
+        PlayerData playerData = getPlayerDataIfPresent(otherPlayer);
+        if(playerData == null || playerData.getBag() == null) return packetPlayOutMount;
 
         Bag bag = (Bag) playerData.getBag();
         if(bag.getBackpackId() == -1) return packetPlayOutMount;
-        int[] newIds = new int[ids.length + 1];
-        newIds[0] = bag.getBackpackId();
-        for(int i = 0; i < ids.length; i++){
-            if(ids[i] == bag.getBackpackId()) continue;
-            newIds[i + 1] = ids[i];
+        boolean alreadyPresent = false;
+        for(int pid : ids) {
+            if(pid == bag.getBackpackId()) { alreadyPresent = true; break; }
+        }
+        int[] newIds;
+        if(alreadyPresent) {
+            newIds = new int[ids.length];
+            newIds[0] = bag.getBackpackId();
+            int writeIdx = 1;
+            for(int pid : ids) {
+                if(pid == bag.getBackpackId()) continue;
+                newIds[writeIdx++] = pid;
+            }
+        } else {
+            newIds = new int[ids.length + 1];
+            newIds[0] = bag.getBackpackId();
+            System.arraycopy(ids, 0, newIds, 1, ids.length);
         }
         FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
         try {
@@ -141,37 +158,75 @@ public class MCChannelHandler extends ChannelDuplexHandler {
     }
 
     private void handleEntitySpawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.getServerLevel(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
-        PlayerData playerData = PlayerData.getPlayer(otherPlayer);
+        PlayerData playerData = getPlayerDataIfPresent(otherPlayer);
         if(playerData == null || playerData.getBag() == null) return;
 
+        Player viewer = getBukkitPlayer();
+        if(viewer == null) return;
         Bukkit.getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> {
             if(!otherPlayer.isOnline()) return;
-            playerData.getBag().spawn(this.player.getBukkitEntity());
+            Player currentViewer = getBukkitPlayer();
+            if(currentViewer == null) return;
+            playerData.getBag().spawn(currentViewer);
         });
     }
 
     private void handleEntityDespawn(int id) {
-        org.bukkit.entity.Entity entity = this.getEntityAsync(this.getServerLevel(), id);
+        org.bukkit.entity.Entity entity = this.getEntityAsync(id);
         if(!(entity instanceof Player)) return;
         Player otherPlayer = (Player) entity;
-        PlayerData playerData = PlayerData.getPlayer(otherPlayer);
+        PlayerData playerData = getPlayerDataIfPresent(otherPlayer);
         if(playerData == null || playerData.getBag() == null) return;
 
+        Player viewer = getBukkitPlayer();
+        if(viewer == null) return;
         Bukkit.getServer().getScheduler().runTask(MagicCosmetics.getInstance(), () -> {
             if(!otherPlayer.isOnline()) return;
-            playerData.getBag().despawn(this.player.getBukkitEntity());
+            Player currentViewer = getBukkitPlayer();
+            if(currentViewer == null) return;
+            playerData.getBag().despawn(currentViewer);
         });
     }
 
-    protected org.bukkit.entity.Entity getEntityAsync(ServerLevel world, int id) {
+    protected org.bukkit.entity.Entity getEntityAsync(int id) {
         return EntityIdCache.getPlayer(id);
     }
 
-    private ServerLevel getServerLevel() {
-        return ((org.bukkit.craftbukkit.CraftWorld) this.player.getBukkitEntity().getWorld()).getHandle();
+    private static final java.lang.reflect.Method PLAYER_DATA_METHOD;
+    private static final java.lang.reflect.Field PLAYER_DATA_FIELD;
+
+    static {
+        java.lang.reflect.Method m = null;
+        java.lang.reflect.Field f = null;
+        try {
+            m = PlayerData.class.getMethod("getPlayerIfPresent", org.bukkit.OfflinePlayer.class);
+        } catch (Exception ignored) {
+            try {
+                f = PlayerData.class.getDeclaredField("players");
+                f.setAccessible(true);
+            } catch (Exception ignored2) {}
+        }
+        PLAYER_DATA_METHOD = m;
+        PLAYER_DATA_FIELD = f;
+    }
+
+    private PlayerData getPlayerDataIfPresent(Player p) {
+        if (p == null) return null;
+        if (PLAYER_DATA_METHOD != null) {
+            try {
+                return (PlayerData) PLAYER_DATA_METHOD.invoke(null, p);
+            } catch (Exception ignored) {}
+        }
+        if (PLAYER_DATA_FIELD != null) {
+            try {
+                @SuppressWarnings("unchecked")
+                java.util.Map<java.util.UUID, PlayerData> map = (java.util.Map<java.util.UUID, PlayerData>) PLAYER_DATA_FIELD.get(null);
+                return map.get(p.getUniqueId());
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 }
-

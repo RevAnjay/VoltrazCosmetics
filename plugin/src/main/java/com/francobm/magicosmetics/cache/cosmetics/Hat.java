@@ -60,6 +60,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             lendToEntity();
             return;
         }
+        recoverCurrentItem();
         if(!overlaps) {
             if(currentItemSaved != null) {
                 player.getInventory().setHelmet(getItemPlaceholders(player));
@@ -68,12 +69,12 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             ItemStack itemStack = player.getInventory().getHelmet();
             if(itemStack == null || itemStack.getType().isAir() || isCosmetic(itemStack)) {
                 //Equip Helmet Without combined.
-                currentItemSaved = null;
+                setAndSaveCurrentItem(null);
                 player.getInventory().setHelmet(getItemPlaceholders(player));
                 return;
             }
             player.getInventory().setHelmet(null);
-            currentItemSaved = itemStack.clone();
+            setAndSaveCurrentItem(itemStack.clone());
             player.getInventory().setHelmet(getItemPlaceholders(player));
             player.updateInventory();
             return;
@@ -101,13 +102,13 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         if(!overlaps){
             if(originalItem == null) {
                 if(currentItemSaved == null || currentItemSaved.getType().isAir()) {
-                    currentItemSaved = null;
+                    setAndSaveCurrentItem(null);
                     player.getInventory().setHelmet(getItemPlaceholders(player));
                     return null;
                 }
             }
             ItemStack helmet = currentItemSaved != null ? currentItemSaved.clone() : null;
-            currentItemSaved = originalItem != null ? originalItem.clone() : null;
+            setAndSaveCurrentItem(originalItem != null ? originalItem.clone() : null);
             player.getInventory().setHelmet(getItemPlaceholders(player));
             return helmet;
         }
@@ -121,13 +122,13 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         if(currentItemSaved == null) return;
         if(!overlaps){
             player.setItemOnCursor(currentItemSaved.clone());
-            currentItemSaved = null;
+            setAndSaveCurrentItem(null);
             player.getInventory().setHelmet(getItemPlaceholders(player));
             return;
         }
         ItemStack itemSavedUpdated = MagicCosmetics.getInstance().getVersion().getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved.clone());
         player.setItemOnCursor(itemSavedUpdated);
-        currentItemSaved = null;
+        setAndSaveCurrentItem(null);
         combinedItem = null;
         player.getInventory().setHelmet(getItemPlaceholders(player));
     }
@@ -137,12 +138,12 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         if(currentItemSaved == null) return null;
         if(!overlaps) {
             ItemStack getItem = currentItemSaved.clone();
-            currentItemSaved = null;
+            setAndSaveCurrentItem(null);
             player.getInventory().setHelmet(getItemPlaceholders(player));
             return getItem;
         }
         ItemStack getItem = MagicCosmetics.getInstance().getVersion().getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved.clone());
-        currentItemSaved = null;
+        setAndSaveCurrentItem(null);
         combinedItem = null;
         player.getInventory().setHelmet(getItemPlaceholders(player));
         return getItem;
@@ -150,6 +151,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
 
     @Override
     public void dropItem(boolean all) {
+        recoverCurrentItem();
         if(currentItemSaved == null) return;
         //Bukkit.getLogger().info("Current Item Saved: " + currentItemSaved.getType().name());
         
@@ -158,13 +160,14 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         if (!all) {
             getItem.setAmount(1);
             if(amount <= 1) {
-                currentItemSaved = null;
+                setAndSaveCurrentItem(null);
             } else {
                 currentItemSaved.setAmount(amount - 1);
+                setAndSaveCurrentItem(currentItemSaved);
             }
         }else {
             getItem.setAmount(amount);
-            currentItemSaved = null;
+            setAndSaveCurrentItem(null);
         }
         Location location = player.getEyeLocation();
         location.setY(location.getY() - 0.30000001192092896);
@@ -182,7 +185,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     }
 
     private ItemStack combinedItems(ItemStack originalItem) {
-        this.currentItemSaved = originalItem != null ? originalItem.clone() : null;
+        this.setAndSaveCurrentItem(originalItem != null ? originalItem.clone() : null);
         ItemStack cosmeticItem = getItemPlaceholders(player);
         if(currentItemSaved == null) return cosmeticItem;
         ItemMeta cosmeticMeta = cosmeticItem.getItemMeta();
@@ -233,19 +236,20 @@ public class Hat extends Cosmetic implements CosmeticInventory {
 
     @Override
     public void remove() {
+        recoverCurrentItem();
         if(!overlaps) {
             if(currentItemSaved == null) {
                 player.getInventory().setHelmet(null);
             } else {
                 player.getInventory().setHelmet(currentItemSaved.clone());
-                currentItemSaved = null;
+                setAndSaveCurrentItem(null);
             }
             return;
         }
         if(currentItemSaved != null){
             //Clear Hat With helmet save in cache
             player.getInventory().setHelmet(currentItemSaved.clone());
-            currentItemSaved = null;
+            setAndSaveCurrentItem(null);
             return;
         }
         player.getInventory().setHelmet(null);
@@ -253,32 +257,29 @@ public class Hat extends Cosmetic implements CosmeticInventory {
 
     @Override
     public void forceRemove() {
-        currentItemSaved = null;
+        setAndSaveCurrentItem(null);
     }
 
     @Override
     public ItemStack getSavedItemForDeath() {
+        recoverCurrentItem();
         if(currentItemSaved == null) return null;
-        ItemStack result;
         if(overlaps && combinedItem != null) {
-            result = MagicCosmetics.getInstance().getVersion()
-                    .getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved);
-        } else {
-            result = currentItemSaved;
+            return MagicCosmetics.getInstance().getVersion()
+                    .getItemSavedWithNBTsUpdated(combinedItem, currentItemSaved.clone());
         }
-        currentItemSaved = null;
-        combinedItem = null;
-        return result;
+        return currentItemSaved.clone();
     }
 
     @Override
     public void clearClose() {
+        recoverCurrentItem();
         if(!overlaps) {
             if(currentItemSaved == null) {
                 player.getInventory().setHelmet(null);
             } else {
                 player.getInventory().setHelmet(currentItemSaved.clone());
-                currentItemSaved = null;
+                setAndSaveCurrentItem(null);
             }
             player.updateInventory();
             return;
@@ -286,7 +287,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         if(currentItemSaved != null){
             //Clear Hat With helmet save in cache
             player.getInventory().setHelmet(currentItemSaved.clone());
-            currentItemSaved = null;
+            setAndSaveCurrentItem(null);
             player.updateInventory();
             return;
         }
@@ -306,8 +307,34 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         return currentItemSaved;
     }
 
+    public void recoverCurrentItem() {
+        if (player == null || currentItemSaved != null) return;
+        try {
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(MagicCosmetics.getInstance(), "original_helmet");
+            if (player.getPersistentDataContainer().has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
+                String base64 = player.getPersistentDataContainer().get(key, org.bukkit.persistence.PersistentDataType.STRING);
+                if (base64 != null && !base64.isEmpty()) {
+                    currentItemSaved = Utils.itemFromBase64(base64);
+                }
+            }
+        } catch (Exception e) {}
+    }
+
+    private void setAndSaveCurrentItem(ItemStack item) {
+        this.currentItemSaved = item;
+        if (player == null) return;
+        try {
+            org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey(MagicCosmetics.getInstance(), "original_helmet");
+            if (item == null || item.getType().isAir()) {
+                player.getPersistentDataContainer().remove(key);
+            } else {
+                player.getPersistentDataContainer().set(key, org.bukkit.persistence.PersistentDataType.STRING, Utils.itemToBase64(item));
+            }
+        } catch (Exception e) {}
+    }
+
     public void setCurrentItemSaved(ItemStack currentItemSaved) {
-        this.currentItemSaved = currentItemSaved;
+        setAndSaveCurrentItem(currentItemSaved);
     }
 
     public boolean isHasDropped() {
@@ -333,3 +360,4 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         // Nothing to do
     }
 }
+

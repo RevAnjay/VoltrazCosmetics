@@ -3,27 +3,16 @@ package com.francobm.magicosmetics.provider.husksync;
 import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.cache.PlayerData;
 import net.william278.husksync.api.HuskSyncAPI;
-import net.william278.husksync.data.BukkitData;
-import net.william278.husksync.data.Data;
 import net.william278.husksync.data.DataSnapshot;
 import net.william278.husksync.data.Identifier;
 import net.william278.husksync.event.BukkitDataSaveEvent;
-import net.william278.husksync.event.BukkitPreSyncEvent;
-import net.william278.husksync.event.BukkitSyncCompleteEvent;
-import net.william278.husksync.user.BukkitUser;
-import net.william278.husksync.user.OnlineUser;
 import net.william278.husksync.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitRunnable;
 
-import javax.swing.text.html.Option;
 import java.util.Optional;
-
-import static net.william278.husksync.libraries.nbtapi.NBT.getPersistentData;
 
 public class HuskSync implements Listener {
     private static final Identifier COSMETICS_ID = Identifier.from("magicosmetics", "cosmetics");

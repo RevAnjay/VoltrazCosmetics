@@ -8,10 +8,6 @@ import com.google.common.io.ByteStreams;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
 public class MagicCosmetics extends Plugin {
 
     //Crear Servidor Socket en Proxy y Cliente Socket en servers backend. El Servidor Socket tendrá acceso a la base de datos cuando el proxy esté activado y los servers backend no podrán usar la base de datos.

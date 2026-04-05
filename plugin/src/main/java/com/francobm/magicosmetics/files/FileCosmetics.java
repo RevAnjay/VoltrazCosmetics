@@ -3,7 +3,6 @@ package com.francobm.magicosmetics.files;
 import com.francobm.magicosmetics.MagicCosmetics;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

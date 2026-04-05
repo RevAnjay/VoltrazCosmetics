@@ -4,12 +4,11 @@ import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.cache.EntityCache;
 import com.francobm.magicosmetics.cache.NPC;
 import com.francobm.magicosmetics.cache.NPCType;
-import net.citizensnpcs.NPCNeedsRespawnEvent;
 import net.citizensnpcs.api.event.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-import java.util.UUID;
+
 
 public class CitizensListener implements Listener {
     private final MagicCosmetics plugin = MagicCosmetics.getInstance();

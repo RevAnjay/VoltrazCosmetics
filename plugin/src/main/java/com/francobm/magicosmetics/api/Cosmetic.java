@@ -34,7 +34,7 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 
 public abstract class Cosmetic {
-    public static Map<String, Cosmetic> cosmetics = new LinkedHashMap<>();
+    public static volatile Map<String, Cosmetic> cosmetics = new LinkedHashMap<>();
     private final String id;
     private String name;
     protected ItemStack itemStack;
@@ -106,10 +106,7 @@ public abstract class Cosmetic {
 
     public static List<Cosmetic> getCosmeticsUnHideByType(CosmeticType cosmeticType){
         List<Cosmetic> cosmetics2 = new ArrayList<>();
-        for(String id : cosmetics.keySet()){
-            if(id.isEmpty()) continue;
-            Cosmetic cosmetic = Cosmetic.getCloneCosmetic(id);
-            if(cosmetic == null) continue;
+        for(Cosmetic cosmetic : cosmetics.values()){
             if(cosmetic.isHideMenu()) continue;
             if(cosmetic.getCosmeticType() != cosmeticType) continue;
             cosmetics2.add(cosmetic);
@@ -119,10 +116,7 @@ public abstract class Cosmetic {
 
     public static Set<Cosmetic> getSetCosmeticsHideByType(CosmeticType cosmeticType) {
         Set<Cosmetic> cosmetics2 = new HashSet<>();
-        for(String id : cosmetics.keySet()){
-            if(id.isEmpty()) continue;
-            Cosmetic cosmetic = Cosmetic.getCloneCosmetic(id);
-            if(cosmetic == null) continue;
+        for(Cosmetic cosmetic : cosmetics.values()){
             if(cosmetic.isHideMenu()) continue;
             if(cosmetic.getCosmeticType() != cosmeticType) continue;
             cosmetics2.add(cosmetic);
@@ -132,10 +126,7 @@ public abstract class Cosmetic {
 
     public static Set<Cosmetic> getCosmeticsByType(CosmeticType cosmeticType){
         Set<Cosmetic> cosmetics2 = new HashSet<>();
-        for(String id : cosmetics.keySet()){
-            if(id.isEmpty()) continue;
-            Cosmetic cosmetic = Cosmetic.getCloneCosmetic(id);
-            if(cosmetic == null) continue;
+        for(Cosmetic cosmetic : cosmetics.values()){
             if(cosmetic.getCosmeticType() != cosmeticType) continue;
             cosmetics2.add(cosmetic);
         }
@@ -186,7 +177,7 @@ public abstract class Cosmetic {
 
     public static void loadCosmetics(){
         MagicCosmetics plugin = MagicCosmetics.getInstance();
-        cosmetics.clear();
+        Map<String, Cosmetic> newCosmetics = new LinkedHashMap<>();
         FileCosmetics cosmeticsFiles = plugin.getCosmetics();
         int cosmetics_count = 0;
         for(FileCreator cosmeticsConf : cosmeticsFiles.getFiles().values()){
@@ -463,10 +454,12 @@ public abstract class Cosmetic {
                 }
                 NamespacedKey namespacedKey = new NamespacedKey(plugin, "cosmetic");
                 //itemStack = plugin.getVersion().setNBTCosmetic(itemStack, key);
-                ItemMeta itemMeta = itemStack.getItemMeta();
-                if(itemMeta != null){
-                    itemMeta.getPersistentDataContainer().set(namespacedKey, PersistentDataType.STRING, key);
-                    itemStack.setItemMeta(itemMeta);
+                if(itemStack != null){
+                    ItemMeta itemMeta = itemStack.getItemMeta();
+                    if(itemMeta != null){
+                        itemMeta.getPersistentDataContainer().set(namespacedKey, PersistentDataType.STRING, key);
+                        itemStack.setItemMeta(itemMeta);
+                    }
                 }
                 switch (cosmeticType){
                     case HAT:
@@ -474,35 +467,35 @@ public abstract class Cosmetic {
                         if(color != null) {
                             hat.setDefaultColor(true);
                         }
-                        cosmetics.put(key, hat);
+                        newCosmetics.put(key, hat);
                         break;
                     case BAG:
                         Bag bag = new Bag(key, name, itemStack, modelData, bagForMe, colored, space, cosmeticType, color, distance, permission, isTexture, hideMenu, height, useEmote, backPackEngine, namespacedKey, isDisplay);
                         if(color != null) {
                             bag.setDefaultColor(true);
                         }
-                        cosmetics.put(key, bag);
+                        newCosmetics.put(key, bag);
                         break;
                     case WALKING_STICK:
                         WStick wStick = new WStick(key, name, itemStack, modelData, colored, cosmeticType, color, permission, isTexture, overlaps, hideMenu, useEmote, namespacedKey);
                         if(color != null) {
                             wStick.setDefaultColor(true);
                         }
-                        cosmetics.put(key, wStick);
+                        newCosmetics.put(key, wStick);
                         break;
                     case BALLOON:
                         Balloon balloon = new Balloon(key, name, itemStack, modelData, colored, space, cosmeticType, color, rotation, rotationType, balloonEngine, balloonIA, distance, permission, isTexture, bigHead, hideMenu, invisibleLeash, useEmote, instantFollow, namespacedKey);
                         if(color != null) {
                             balloon.setDefaultColor(true);
                         }
-                        cosmetics.put(key, balloon);
+                        newCosmetics.put(key, balloon);
                         break;
                     case SPRAY:
                         Spray spray = new Spray(key, name, itemStack, modelData, colored, cosmeticType, color, permission, isTexture, image, itemImage, hideMenu, useEmote, namespacedKey);
                         if(color != null) {
                             spray.setDefaultColor(true);
                         }
-                        cosmetics.put(key, spray);
+                        newCosmetics.put(key, spray);
                         break;
                 }
                 cosmetics_count++;
@@ -513,18 +506,19 @@ public abstract class Cosmetic {
                     case 0:
                         break;
                     case 1:
-                        cosmetics = new TreeMap<>(cosmetics);
+                        newCosmetics = new TreeMap<>(newCosmetics);
                         break;
                     case 2:
-                        List<Cosmetic> list = new ArrayList<>(cosmetics.values());
+                        List<Cosmetic> list = new ArrayList<>(newCosmetics.values());
                         Collections.shuffle(list);
-                        cosmetics = new LinkedHashMap<>();
-                        list.forEach(cosmetic -> cosmetics.put(cosmetic.getId(), cosmetic));
+                        newCosmetics = new LinkedHashMap<>();
+                        for(Cosmetic cosmetic : list) newCosmetics.put(cosmetic.getId(), cosmetic);
                         break;
                 }
             }
             plugin.getLogger().info("Registered cosmetics: " + cosmetics_count);
         }
+        cosmetics = newCosmetics;
     }
 
     public String getId() {

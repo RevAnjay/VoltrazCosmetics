@@ -1,7 +1,6 @@
 package com.francobm.magicosmetics.listeners;
 
 import com.francobm.magicosmetics.MagicCosmetics;
-import com.francobm.magicosmetics.api.CosmeticType;
 import com.francobm.magicosmetics.cache.PlayerData;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;

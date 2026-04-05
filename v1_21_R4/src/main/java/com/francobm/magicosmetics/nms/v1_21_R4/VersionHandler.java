@@ -20,7 +20,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.PositionMoveRotation;
@@ -220,6 +219,7 @@ public class VersionHandler extends Version {
         net.minecraft.world.item.ItemStack itemCosmetic = CraftItemStack.asNMSCopy(itemStack);
         if(!itemCosmetic.has(DataComponents.CUSTOM_DATA)) return "";
         CustomData customData = itemCosmetic.get(DataComponents.CUSTOM_DATA);
+        if (customData == null) return "";
         return customData.copyTag().getStringOr("magic_cosmetic", "");
     }
 
@@ -286,9 +286,10 @@ public class VersionHandler extends Version {
         if(!copy.has(DataComponents.CUSTOM_DATA)) return cosmetic;
         net.minecraft.world.item.ItemStack cosmeticItem = CraftItemStack.asNMSCopy(cosmetic);
         CustomData copyCustomData = copy.get(DataComponents.CUSTOM_DATA);
+        if (copyCustomData == null) return cosmetic;
         CustomData cosmeticCustomData = cosmeticItem.get(DataComponents.CUSTOM_DATA);
         CompoundTag copyNBT = copyCustomData.copyTag();
-        CompoundTag cosmeticNBT = cosmeticCustomData.copyTag();
+        CompoundTag cosmeticNBT = cosmeticCustomData != null ? cosmeticCustomData.copyTag() : new CompoundTag();
         for(String key : copyNBT.keySet()){
             if(debug) Bukkit.getLogger().info("Key: " + key);
             if((key.equals("display") || key.equals("minecraft:custom_name")) || (key.equals("CustomModelData") || key.equals("minecraft:custom_model_data"))) continue;
@@ -317,6 +318,7 @@ public class VersionHandler extends Version {
         if(!realItem.has(DataComponents.CUSTOM_DATA)) return itemStack;
         CustomData copyCustomData = copy.get(DataComponents.CUSTOM_DATA);
         CustomData realCustomData = realItem.get(DataComponents.CUSTOM_DATA);
+        if (copyCustomData == null || realCustomData == null) return itemStack;
         CompoundTag copyNBT = copyCustomData.copyTag();
         CompoundTag realNBT = realCustomData.copyTag();
         for(String key : copyNBT.keySet()){
@@ -348,8 +350,8 @@ public class VersionHandler extends Version {
         PlayerTextures textures = profile.getTextures();
         URL urlObject;
         try {
-            urlObject = new URL(texture);
-        } catch (MalformedURLException exception) {
+            urlObject = new java.net.URI(texture).toURL();
+        } catch (MalformedURLException | java.net.URISyntaxException exception) {
             try {
                 urlObject = getUrlFromBase64(texture);
             } catch (MalformedURLException e) {

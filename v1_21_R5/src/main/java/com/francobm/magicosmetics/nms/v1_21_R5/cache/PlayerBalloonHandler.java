@@ -23,18 +23,19 @@ import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PlayerBalloonHandler extends PlayerBalloon {
-    private final ArmorStand armorStand;
-    private final net.minecraft.world.entity.LivingEntity leashed;
+    private ArmorStand armorStand;
+    private net.minecraft.world.entity.LivingEntity leashed;
     private final double distance;
     private final double SQUARED_WALKING;
     private final double SQUARED_DISTANCE;
+    private final int armorStandId;
+    private final int leashedId;
 
     public PlayerBalloonHandler(Player p, double space, double distance, boolean bigHead, boolean invisibleLeash) {
         viewers = new CopyOnWriteArrayList<>(new ArrayList<>());
@@ -65,10 +66,13 @@ public class PlayerBalloonHandler extends PlayerBalloon {
         this.space = space;
         this.SQUARED_WALKING = 5.5 * space;
         this.SQUARED_DISTANCE = 10 * space;
+        this.armorStandId = armorStand.getId();
+        this.leashedId = leashed.getId();
     }
 
     @Override
     public void spawn(Player player) {
+        if(armorStand == null || leashed == null) return;
         if(hideViewers.contains(player.getUniqueId())) return;
         Player owner = getPlayer();
         if(owner == null) return;
@@ -115,17 +119,25 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             remove(player);
         }
         playerBalloons.remove(uuid);
+        armorStand = null;
+        leashed = null;
+        tempPlayerLoc.setWorld(null);
+        tempStandLoc.setWorld(null);
+        tempDistLoc1.setWorld(null);
+        tempTeleportLoc.setWorld(null);
+        lendEntity = null;
     }
 
     @Override
     public void remove(Player player) {
         ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
-        connection.send(new ClientboundRemoveEntitiesPacket(armorStand.getId(), leashed.getId()));
+        connection.send(new ClientboundRemoveEntitiesPacket(armorStandId, leashedId));
         viewers.remove(player.getUniqueId());
     }
 
     @Override
     public void setItem(ItemStack itemStack) {
+        if(armorStand == null) return;
         if(isBigHead()) {
             setItemBigHead(itemStack);
             return;
@@ -139,11 +151,12 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                 continue;
             }
             ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
-            connection.send(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
+            connection.send(new ClientboundSetEquipmentPacket(armorStandId, list));
         }
     }
 
     public void setItemBigHead(ItemStack itemStack) {
+        if(armorStand == null) return;
         ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
         list.add(new Pair<>(EquipmentSlot.MAINHAND, CraftItemStack.asNMSCopy(itemStack)));
         for (UUID uuid : viewers) {
@@ -153,12 +166,13 @@ public class PlayerBalloonHandler extends PlayerBalloon {
                 continue;
             }
             ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
-            connection.send(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
+            connection.send(new ClientboundSetEquipmentPacket(armorStandId, list));
         }
     }
 
     @Override
     public void lookEntity(float yaw, float pitch) {
+        if(armorStand == null || leashed == null) return;
         for (UUID uuid : viewers) {
             Player player = Bukkit.getPlayer(uuid);
             if(player == null) {
@@ -167,13 +181,14 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             }
             ServerGamePacketListenerImpl connection = ((CraftPlayer) player).getHandle().connection;
             connection.send(new ClientboundRotateHeadPacket(armorStand, (byte) (yaw * 256 / 360)));
-            connection.send(new ClientboundMoveEntityPacket.Rot(armorStand.getId(), (byte) (yaw * 256 / 360), (byte)0, true));
+            connection.send(new ClientboundMoveEntityPacket.Rot(armorStandId, (byte) (yaw * 256 / 360), (byte)0, true));
             connection.send(new ClientboundRotateHeadPacket(leashed, (byte) (yaw * 256 / 360)));
-            connection.send(new ClientboundMoveEntityPacket.Rot(leashed.getId(), (byte) (yaw * 256 / 360), (byte)0, true));
+            connection.send(new ClientboundMoveEntityPacket.Rot(leashedId, (byte) (yaw * 256 / 360), (byte)0, true));
         }
     }
 
     protected void teleport(Location location) {
+        if(leashed == null || armorStand == null) return;
         ReflectionUtils.absMoveTo(leashed, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         ReflectionUtils.absMoveTo(armorStand, location.getX(), location.getY() - 1.3, location.getZ(), location.getYaw(), location.getPitch());
     }
@@ -539,6 +554,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
             return;
         }
         if(!rotation) return;
+        if(armorStand == null) return;
         switch (rotationType) {
             case RIGHT:
                 armorStand.setBodyPose(new Rotations(ReflectionUtils.rotX(armorStand.getBodyPose()), ReflectionUtils.rotY(armorStand.getBodyPose()) + rotate, ReflectionUtils.rotZ(armorStand.getBodyPose())));
@@ -562,6 +578,7 @@ public class PlayerBalloonHandler extends PlayerBalloon {
 
     public void rotateBigHead(boolean rotation, RotationType rotationType, float rotate) {
         if(!rotation) return;
+        if(armorStand == null) return;
         switch (rotationType){
             case RIGHT:
                 armorStand.setHeadPose(new Rotations(ReflectionUtils.rotX(armorStand.getHeadPose()), ReflectionUtils.rotY(armorStand.getHeadPose()) + rotate, ReflectionUtils.rotZ(armorStand.getHeadPose())));

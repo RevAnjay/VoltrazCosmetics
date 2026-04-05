@@ -5,13 +5,13 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class NPC {
 
-    public static Map<UUID, NPC> npcs = new HashMap<>();
+    public static Map<UUID, NPC> npcs = new ConcurrentHashMap<>();
     protected Entity entity;
     protected Entity punch;
     protected Entity armorStand;

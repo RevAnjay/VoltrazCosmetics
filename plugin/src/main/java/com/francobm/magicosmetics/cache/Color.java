@@ -149,6 +149,7 @@ public class Color {
                         continue;
                     }
                 }
+                if (primaryItem == null) continue;
                 ItemMeta itemMeta = primaryItem.getItemMeta();
                 itemMeta.setDisplayName(displayName);
                 itemMeta.setLore(lore);

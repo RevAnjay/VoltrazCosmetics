@@ -8,14 +8,11 @@ import com.francobm.magicosmetics.cache.inventories.Menu;
 import com.francobm.magicosmetics.files.FileCreator;
 import com.francobm.magicosmetics.utils.Utils;
 import org.bukkit.Bukkit;
-import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.*;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;

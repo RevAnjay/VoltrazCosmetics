@@ -4,7 +4,6 @@ import com.francobm.magicosmetics.MagicCosmetics;
 import com.francobm.magicosmetics.cache.PlayerData;
 import com.francobm.magicosmetics.cache.cosmetics.backpacks.Bag;
 import com.francobm.magicosmetics.cache.cosmetics.balloons.Balloon;
-import com.francobm.magicosmetics.nms.version.Version;
 import dev.lone.itemsadder.api.CustomEntity;
 import dev.lone.itemsadder.api.CustomPlayer;
 import dev.lone.itemsadder.api.CustomStack;

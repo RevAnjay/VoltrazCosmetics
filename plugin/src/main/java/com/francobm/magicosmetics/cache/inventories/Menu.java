@@ -238,6 +238,8 @@ public abstract class Menu implements InventoryHolder {
                     tokenMenu.setPermission(perm);
                     inventories.put(key, tokenMenu);
                     break;
+                case ITEM_SKIN:
+                    break;
             }
             menus_count++;
         }

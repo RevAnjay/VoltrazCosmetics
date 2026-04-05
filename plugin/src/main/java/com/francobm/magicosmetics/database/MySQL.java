@@ -5,7 +5,6 @@ import com.francobm.magicosmetics.cache.PlayerData;
 import com.francobm.magicosmetics.events.PlayerDataLoadEvent;
 import com.francobm.magicosmetics.files.FileCreator;
 import com.francobm.magicosmetics.nms.bag.EntityBag;
-import com.francobm.magicosmetics.nms.bag.PlayerBag;
 import com.francobm.magicosmetics.nms.balloon.EntityBalloon;
 import com.francobm.magicosmetics.nms.balloon.PlayerBalloon;
 import com.francobm.magicosmetics.nms.spray.CustomSpray;
@@ -41,7 +40,7 @@ public class MySQL extends SQL{
         PreparedStatement preparedStatement = null;
         try {
             connection = hikariCP.getHikariDataSource().getConnection();
-            preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + table + "` (id INT AUTO_INCREMENT, UUID VARCHAR(255), Player VARCHAR(255), Hat VARCHAR(255), Bag VARCHAR(255), WStick VARCHAR(255), Balloon VARCHAR(255), Spray VARCHAR(255), Available VARCHAR(10000), PRIMARY KEY (id))");
+            preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `" + table + "` (id INT AUTO_INCREMENT, UUID VARCHAR(255), Player VARCHAR(255), Hat VARCHAR(255), Bag VARCHAR(255), WStick VARCHAR(255), Balloon VARCHAR(255), Spray VARCHAR(255), Available VARCHAR(10000), PRIMARY KEY (id), UNIQUE KEY `uk_uuid` (UUID))");
             preparedStatement.executeUpdate();
             plugin.getLogger().info("MySQL table created successfully");
         } catch (SQLException throwable) {
@@ -82,14 +81,17 @@ public class MySQL extends SQL{
                 String spray = resultSet.getString("Spray");
                 playerData.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
                 playerData.loadCosmetics(cosmetics);
-                playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
-                playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
-                playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));
-                playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));
-                playerData.setCosmetic(CosmeticType.SPRAY, playerData.getCosmeticById(spray));
-                CustomSpray.updateSpray(player);
-                PlayerBalloon.updatePlayerBalloon(player);
-                plugin.getServer().getPluginManager().callEvent(new PlayerDataLoadEvent(playerData, playerData.cosmeticsInUse()));
+
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
+                    playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
+                    playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));
+                    playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));
+                    playerData.setCosmetic(CosmeticType.SPRAY, playerData.getCosmeticById(spray));
+                    CustomSpray.updateSpray(player);
+                    PlayerBalloon.updatePlayerBalloon(player);
+                    plugin.getServer().getPluginManager().callEvent(new PlayerDataLoadEvent(playerData, playerData.cosmeticsInUse()));
+                });
             }
         }catch (SQLException throwable){
             plugin.getLogger().severe("Failed to load player information: " + throwable.getMessage());
@@ -103,35 +105,23 @@ public class MySQL extends SQL{
         savePlayerInfo(playerData, close);
     }
 
+    private static final String UPSERT_SINGLE = "INSERT INTO %s (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Player=VALUES(Player), Hat=VALUES(Hat), Bag=VALUES(Bag), WStick=VALUES(WStick), Balloon=VALUES(Balloon), Spray=VALUES(Spray), Available=VALUES(Available)";
+
     private void savePlayerInfo(PlayerData player, boolean close){
         Connection connection = null;
         PreparedStatement statement = null;
         try{
             connection = hikariCP.getHikariDataSource().getConnection();
-            if(!checkInfo(player.getUniqueId())){
-                String query = "INSERT INTO " + table + " (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
-                statement = connection.prepareStatement(query);
-                statement.setString(1, player.getUniqueId().toString());
-                statement.setString(2, player.getOfflinePlayer().getName());
-                statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
-                statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
-                statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
-                statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
-                statement.setString(8, player.saveCosmetics());
-                statement.executeUpdate();
-                return;
-            }
-            String query = "UPDATE " + table + " SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
+            String query = String.format(UPSERT_SINGLE, table);
             statement = connection.prepareStatement(query);
-            statement.setString(1, player.getOfflinePlayer().getName());
-            statement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
-            statement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
-            statement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
-            statement.setString(5, player.getBalloon() == null ? "" : player.getBalloon().getId());
-            statement.setString(6, player.getSpray() == null ? "" : player.getSpray().getId());
-            statement.setString(7, player.saveCosmetics());
-            statement.setString(8, player.getUniqueId().toString());
+            statement.setString(1, player.getUniqueId().toString());
+            statement.setString(2, player.getOfflinePlayer().getName());
+            statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
+            statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
+            statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
+            statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
+            statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
+            statement.setString(8, player.saveCosmetics());
             statement.executeUpdate();
         }catch (SQLException throwable) {
             plugin.getLogger().severe("Failed to save player information: " + throwable.getMessage());
@@ -146,34 +136,21 @@ public class MySQL extends SQL{
         PreparedStatement statement = null;
         try{
             connection = hikariCP.getHikariDataSource().getConnection();
+            String query = String.format(UPSERT_SINGLE, table);
+            statement = connection.prepareStatement(query);
             for(PlayerData player : PlayerData.players.values()){
                 player.clearCosmeticsToSaveData();
-                if(!checkInfo(player.getUniqueId())){
-                    String query = "INSERT INTO " + table + " (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
-                    statement = connection.prepareStatement(query);
-                    statement.setString(1, player.getUniqueId().toString());
-                    statement.setString(2, player.getOfflinePlayer().getName());
-                    statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
-                    statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
-                    statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
-                    statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                    statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
-                    statement.setString(8, player.saveCosmetics());
-                    statement.executeUpdate();
-                    return;
-                }
-                String query = "UPDATE " + table + " SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
-                statement = connection.prepareStatement(query);
-                statement.setString(1, player.getOfflinePlayer().getName());
-                statement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
-                statement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
-                statement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
-                statement.setString(5, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                statement.setString(6, player.getSpray() == null ? "" : player.getSpray().getId());
-                statement.setString(7, player.saveCosmetics());
-                statement.setString(8, player.getUniqueId().toString());
-                statement.executeUpdate();
+                statement.setString(1, player.getUniqueId().toString());
+                statement.setString(2, player.getOfflinePlayer().getName());
+                statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
+                statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
+                statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
+                statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
+                statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
+                statement.setString(8, player.saveCosmetics());
+                statement.addBatch();
             }
+            statement.executeBatch();
         }catch (SQLException throwable) {
             plugin.getLogger().severe("Failed to save player information: " + throwable.getMessage());
         } finally {
@@ -243,44 +220,28 @@ public class MySQL extends SQL{
 
     private CompletableFuture<Void> savePlayerInfoAsync(PlayerData player){
         // clearCosmeticsToSaveData() is already called by the listener before this method
-        return checkInfoAsync(player.getUniqueId()).thenCompose(check -> CompletableFuture.runAsync(() -> {
+        return CompletableFuture.runAsync(() -> {
             Connection connection = null;
             PreparedStatement statement = null;
             try{
                 connection = hikariCP.getHikariDataSource().getConnection();
-                if(!check){
-                    String query = "INSERT INTO " + table + " (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
-                    statement = connection.prepareStatement(query);
-                    statement.setString(1, player.getUniqueId().toString());
-                    statement.setString(2, player.getOfflinePlayer().getName());
-                    statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
-                    statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
-                    statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
-                    statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                    statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
-                    statement.setString(8, player.saveCosmetics());
-                    statement.executeUpdate();
-                    return;
-                }
-                String query = "UPDATE " + table + " SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
+                String query = String.format(UPSERT_SINGLE, table);
                 statement = connection.prepareStatement(query);
-                statement.setString(1, player.getOfflinePlayer().getName());
-                statement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
-                statement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
-                statement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
-                statement.setString(5, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                statement.setString(6, player.getSpray() == null ? "" : player.getSpray().getId());
-                statement.setString(7, player.saveCosmetics());
-                statement.setString(8, player.getUniqueId().toString());
+                statement.setString(1, player.getUniqueId().toString());
+                statement.setString(2, player.getOfflinePlayer().getName());
+                statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
+                statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
+                statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
+                statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
+                statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
+                statement.setString(8, player.saveCosmetics());
                 statement.executeUpdate();
-                //player.clearCosmeticsInUse(false);
-                //PlayerData.removePlayer(player);
             }catch (SQLException throwable) {
                 plugin.getLogger().severe("Failed to save player information: " + throwable.getMessage());
             } finally {
                 closeConnections(statement, connection, null);
             }
-        }));
+        });
     }
 
     private CompletableFuture<Boolean> checkInfoAsync(UUID uuid){

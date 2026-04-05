@@ -8,7 +8,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 
 public class ImageRenderer extends MapRenderer {
 
@@ -35,7 +34,7 @@ public class ImageRenderer extends MapRenderer {
         BufferedImage image;
         try {
             if(url.startsWith("http")) {
-                image = ImageIO.read(new URL(url));
+                image = ImageIO.read(java.net.URI.create(url).toURL());
             }else{
                 File file = new File(MagicCosmetics.getInstance().getDataFolder(), "sprays/" + url);
                 MagicCosmetics.getInstance().getLogger().info("Loading spray from file: " + file.getAbsolutePath());

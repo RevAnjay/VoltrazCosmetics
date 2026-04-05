@@ -9,8 +9,6 @@ import com.francobm.magicosmetics.cache.inventories.Menu;
 import com.francobm.magicosmetics.cache.inventories.PaginatedMenu;
 import com.francobm.magicosmetics.cache.inventories.menus.*;
 import com.francobm.magicosmetics.cache.items.Items;
-import com.francobm.magicosmetics.database.MySQL;
-import com.francobm.magicosmetics.database.SQLite;
 import com.francobm.magicosmetics.events.CosmeticChangeEquipEvent;
 import com.francobm.magicosmetics.events.CosmeticEquipEvent;
 import com.francobm.magicosmetics.events.CosmeticUnEquipEvent;
@@ -19,20 +17,10 @@ import com.francobm.magicosmetics.nms.NPC.NPC;
 import com.francobm.magicosmetics.utils.Utils;
 import com.francobm.magicosmetics.utils.XMaterial;
 import org.bukkit.Bukkit;
-import org.bukkit.FluidCollisionMode;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.block.BlockFace;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.RayTraceResult;
 
 import java.util.*;
 
@@ -42,7 +30,7 @@ public class CosmeticsManager {
     private final MagicCosmetics plugin = MagicCosmetics.getInstance();
     private BukkitTask otherCosmetics;
     private BukkitTask balloons;
-    private BukkitTask saveDataTask;
+    // private BukkitTask saveDataTask;
     private BukkitTask npcTask;
     int i = 0;
 
@@ -120,13 +108,18 @@ public class CosmeticsManager {
             }, 5L, 4L);
         }
         if(balloons == null) {
-            balloons = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            final int[] entityCleanupCounter = {0};
+            balloons = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
                 for(PlayerData playerData : PlayerData.players.values()){
                     if(playerData.getOfflinePlayer().getPlayer() == null) continue;
                     playerData.activeBalloon();
                 }
                 for(EntityCache entityCache : EntityCache.entities.values()){
                     entityCache.activeCosmetics();
+                }
+                if(++entityCleanupCounter[0] >= 50) {
+                    entityCleanupCounter[0] = 0;
+                    EntityCache.cleanupInvalid();
                 }
             }, 0L, 4L);
         }
@@ -177,8 +170,11 @@ public class CosmeticsManager {
         plugin.getServer().getScheduler().cancelTasks(plugin);
         otherCosmetics = null;
         balloons = null;
-        saveDataTask = null;
+        // saveDataTask = null;
         npcTask = null;
+
+        EntityCache.clearAll();
+        NPC.npcs.clear();
     }
 
     public void reload(CommandSender sender){
@@ -578,6 +574,8 @@ public class CosmeticsManager {
             case TOKEN:
                 ((TokenMenu)menu).getClone(playerData).open();
                 break;
+            case ITEM_SKIN:
+                break;
         }
         if(paginatedMenu == null) return;
         paginatedMenu.setShowAllCosmeticsInMenu(plugin.isShowAllCosmeticsInMenu());
@@ -603,6 +601,7 @@ public class CosmeticsManager {
             case BALLOON:
             case SPRAY:
             case FREE_COLORED:
+            case ITEM_SKIN:
                 break;
             case COLORED:
                 coloredMenu.getClone(playerData, color, cosmetic).open();
@@ -627,6 +626,8 @@ public class CosmeticsManager {
             case TOKEN:
             case BALLOON:
             case COLORED:
+            case SPRAY:
+            case ITEM_SKIN:
                 break;
             case FREE_COLORED:
                 freeColoredMenu.getClone(playerData, color).open();

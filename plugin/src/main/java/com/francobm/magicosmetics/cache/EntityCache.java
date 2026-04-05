@@ -51,7 +51,29 @@ public class EntityCache {
     }
 
     public static void removeEntity(UUID uniqueId){
-        entities.remove(uniqueId);
+        EntityCache cache = entities.remove(uniqueId);
+        if(cache != null) {
+            cache.clearCosmeticsInUse();
+        }
+    }
+
+    public static void cleanupInvalid() {
+        entities.entrySet().removeIf(entry -> {
+            EntityCache cache = entry.getValue();
+            if(cache.entity == null) return true;
+            if(cache.entity.isDead() || !cache.entity.isValid()) {
+                cache.clearCosmeticsInUse();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public static void clearAll() {
+        for(EntityCache cache : entities.values()) {
+            cache.clearCosmeticsInUse();
+        }
+        entities.clear();
     }
 
     public boolean hasEquipped(String cosmeticId){

@@ -49,6 +49,8 @@ public class HikariCP {
                 String sqlite = "jdbc:sqlite:" + ((SQLite)sql).getFileSQL();
                 config.setJdbcUrl(sqlite);
                 config.setDriverClassName("org.sqlite.JDBC");
+                config.setMaximumPoolSize(2);
+                config.setConnectionTimeout(15000); // 15 seconds
             }
             hikariDataSource = new HikariDataSource(config);
         }catch (Exception e){

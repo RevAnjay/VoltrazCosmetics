@@ -12,7 +12,8 @@ public class SkinListener {
     public SkinListener() {
         SkinsRestorerProvider.get().getEventBus().subscribe(plugin, SkinApplyEvent.class, event -> {
             Player player = event.getPlayer(Player.class);
-            PlayerData playerData = PlayerData.getPlayer(player);
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData == null) return;
             plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, playerData::clearBag, 20L);
         });
     }

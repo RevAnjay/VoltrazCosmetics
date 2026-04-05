@@ -4,7 +4,6 @@ import com.francobm.magicosmetics.api.CosmeticType;
 import com.francobm.magicosmetics.cache.PlayerData;
 import com.francobm.magicosmetics.events.PlayerDataLoadEvent;
 import com.francobm.magicosmetics.nms.bag.EntityBag;
-import com.francobm.magicosmetics.nms.bag.PlayerBag;
 import com.francobm.magicosmetics.nms.balloon.EntityBalloon;
 import com.francobm.magicosmetics.nms.balloon.PlayerBalloon;
 import com.francobm.magicosmetics.nms.spray.CustomSpray;
@@ -212,12 +211,14 @@ public class SQLite extends SQL {
                 String spray = resultSet.getString("Spray");
                 playerData.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
                 playerData.loadCosmetics(cosmetics);
-                playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
-                playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
-                playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));
-                playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));
-                playerData.setCosmetic(CosmeticType.SPRAY, playerData.getCosmeticById(spray));
-                plugin.getServer().getPluginManager().callEvent(new PlayerDataLoadEvent(playerData, playerData.cosmeticsInUse()));
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
+                    playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
+                    playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));
+                    playerData.setCosmetic(CosmeticType.BALLOON, playerData.getCosmeticById(balloon));
+                    playerData.setCosmetic(CosmeticType.SPRAY, playerData.getCosmeticById(spray));
+                    plugin.getServer().getPluginManager().callEvent(new PlayerDataLoadEvent(playerData, playerData.cosmeticsInUse()));
+                });
             }
         }catch (SQLException throwable){
             plugin.getLogger().severe("Failed to load player information: " + throwable.getMessage());

@@ -46,8 +46,8 @@ public class ItemsAdderListener implements Listener {
     @EventHandler
     public void onPlaceBlocks(CustomBlockPlaceEvent event) {
         Player player = event.getPlayer();
-        PlayerData playerData = PlayerData.getPlayer(player);
-        if(playerData.getWStick() == null) return;
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || playerData.getWStick() == null) return;
         if(!playerData.getWStick().isCosmetic(event.getItemInHand())) return;
         event.setCancelled(true);
     }
@@ -57,8 +57,8 @@ public class ItemsAdderListener implements Listener {
         if(event.getHand() != EquipmentSlot.OFF_HAND) return;
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        PlayerData playerData = PlayerData.getPlayer(player);
-        if(playerData.getWStick() == null) return;
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || playerData.getWStick() == null) return;
         if(!playerData.getWStick().isCosmetic(item)) return;
         event.setCancelled(true);
     }

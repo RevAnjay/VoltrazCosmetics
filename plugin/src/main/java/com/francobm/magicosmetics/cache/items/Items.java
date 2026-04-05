@@ -134,6 +134,7 @@ public class Items {
                     continue;
                 }
             }
+            if (itemStack == null) continue;
             itemStack.setAmount(amount);
             ItemMeta itemMeta = itemStack.getItemMeta();
             itemMeta.setDisplayName(display);

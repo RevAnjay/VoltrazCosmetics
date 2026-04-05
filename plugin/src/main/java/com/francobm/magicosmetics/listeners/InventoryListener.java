@@ -23,6 +23,10 @@ public class InventoryListener implements Listener {
             TokenMenu menu = (TokenMenu) holder;
             if(!menu.isDrag()) return;
             event.setCancelled(true);
+        //     return;
+        // }
+        // if(holder instanceof Menu) {
+        //     event.setCancelled(true);
         }
     }
 

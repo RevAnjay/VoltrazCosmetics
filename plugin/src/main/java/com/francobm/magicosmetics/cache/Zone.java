@@ -6,15 +6,10 @@ import com.francobm.magicosmetics.utils.Utils;
 import com.francobm.magicosmetics.utils.XMaterial;
 import com.francobm.magicosmetics.MagicCosmetics;
 import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -279,6 +274,7 @@ public class Zone {
 
     public ItemStack getCorn(){
         ItemStack itemStack = XMaterial.BLAZE_ROD.parseItem();
+        if (itemStack == null) return null;
         ItemMeta itemMeta = itemStack.getItemMeta();
         itemMeta.setDisplayName("§bSet the points of the area " + getName());
         List<String> lore = new ArrayList<>();

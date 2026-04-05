@@ -186,6 +186,8 @@ public class SlotMenu {
                     break;
                 case DRAG_AND_DROP:
                     break;
+                default:
+                    break;
             }
         }
     }
@@ -230,6 +232,10 @@ public class SlotMenu {
             case UPDATE_OLD_TOKEN:
                 updateOldToken(player);
                 break;
+            case DRAG_AND_DROP:
+                break;
+            default:
+                break;
         }
         playSound(player);
         return true;
@@ -252,6 +258,8 @@ public class SlotMenu {
                         if(command.startsWith("magiccos unset ")){
                             refreshMenu(player);
                         }
+                        break;
+                    default:
                         break;
                 }
             }

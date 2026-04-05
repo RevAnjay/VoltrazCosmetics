@@ -79,12 +79,9 @@ public class PlayerData {
     }
 
     public static PlayerData getPlayer(OfflinePlayer player){
-        if(!players.containsKey(player.getUniqueId())){
-            PlayerData playerData = new PlayerData(player.getUniqueId(), player.getName(), null/*MagicCosmetics.getInstance().getVersion().createRangeManager(player.getPlayer())*/);
-            players.put(player.getUniqueId(), playerData);
-            return playerData;
-        }
-        return players.get(player.getUniqueId());
+        return players.computeIfAbsent(player.getUniqueId(), uuid ->
+            new PlayerData(uuid, player.getName(), null/*MagicCosmetics.getInstance().getVersion().createRangeManager(player.getPlayer())*/)
+        );
     }
 
     /**
@@ -444,7 +441,11 @@ public class PlayerData {
                 if(plugin.isPermissions() && plugin.isLuckPerms() && plugin.getLuckPerms().isExpirePermission(offlinePlayer.getUniqueId(), cosmetic1.getPermission()))
                     continue;
                 if(this.cosmetics.containsKey(color[0])) continue;
-                cosmetic1.setColor(Color.fromRGB(Integer.parseInt(color[1])));
+                try {
+                    cosmetic1.setColor(Color.fromRGB(Integer.parseInt(color[1])));
+                } catch (NumberFormatException e) {
+                    plugin.getLogger().warning("Skipping malformed color value for cosmetic " + color[0] + ": " + color[1]);
+                }
                 addCosmetic(cosmetic1);
                 continue;
             }
@@ -1064,6 +1065,12 @@ public class PlayerData {
             bag.clearClose();
         if(spray != null)
             spray.clearClose();
+        if(hat != null) hat.setPlayer(null);
+        if(bag != null) bag.setPlayer(null);
+        if(wStick != null) wStick.setPlayer(null);
+        if(balloon != null) balloon.setPlayer(null);
+        if(spray != null) spray.setPlayer(null);
+        offlinePlayer = null;
     }
 
     public ItemStack getDeathBackupHelmet() {
@@ -1757,9 +1764,9 @@ public class PlayerData {
             setCosmetic(CosmeticType.HAT, getCosmeticById(hat));
             setCosmetic(CosmeticType.WALKING_STICK, getCosmeticById(wStick));
             setCosmetic(CosmeticType.BAG, getCosmeticById(bag));
+            setCosmetic(CosmeticType.BALLOON, getCosmeticById(balloon));
+            setCosmetic(CosmeticType.SPRAY, getCosmeticById(spray));
         });
-        setCosmetic(CosmeticType.BALLOON, getCosmeticById(balloon));
-        setCosmetic(CosmeticType.SPRAY, getCosmeticById(spray));
     }
 
     public String getCosmeticsInUse() {

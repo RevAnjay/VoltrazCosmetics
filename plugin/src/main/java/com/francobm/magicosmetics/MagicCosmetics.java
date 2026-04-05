@@ -413,7 +413,8 @@ public final class MagicCosmetics extends JavaPlugin {
         }
         for(Player player : Bukkit.getOnlinePlayers()){
             if(player == null || !player.isOnline()) continue;
-            PlayerData playerData = PlayerData.getPlayer(player);
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData == null) continue;
             if(!playerData.isZone()) continue;
             playerData.exitZoneSync();
         }
@@ -426,6 +427,8 @@ public final class MagicCosmetics extends JavaPlugin {
             bossBar.clear();
         }
         NPCsLoader.save();
+        
+        PlayerData.players.clear();
     }
 
     public boolean isProxy() {

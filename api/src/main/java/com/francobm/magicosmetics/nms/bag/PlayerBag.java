@@ -1,6 +1,5 @@
 package com.francobm.magicosmetics.nms.bag;
 
-import com.francobm.magicosmetics.cache.PlayerData;
 import com.francobm.magicosmetics.nms.IRangeManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
@@ -8,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class PlayerBag {
     protected ItemStack backPackItem;
@@ -18,7 +17,7 @@ public abstract class PlayerBag {
     protected IRangeManager rangeManager;
     protected float height;
     protected List<Integer> ids;
-    protected List<UUID> hideViewers;
+    protected List<UUID> hideViewers = new CopyOnWriteArrayList<>();
     protected int backpackId;
 
     public abstract void spawn(Player player);

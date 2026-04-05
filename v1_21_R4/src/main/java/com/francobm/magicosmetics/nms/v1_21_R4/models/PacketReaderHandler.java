@@ -36,7 +36,13 @@ public class PacketReaderHandler extends PacketReader{
         Channel channel = getPrivateChannel(craftPlayer.getHandle().connection);
         if(channel == null) return;
         channel.eventLoop().submit(() -> {
-            channel.pipeline().remove("magic_cosmetics_packet_handler");
+            try {
+                if(channel.pipeline().get("magic_cosmetics_packet_handler") != null) {
+                    channel.pipeline().remove("magic_cosmetics_packet_handler");
+                }
+            } catch (Exception ignored) {
+
+            }
         });
     }
 

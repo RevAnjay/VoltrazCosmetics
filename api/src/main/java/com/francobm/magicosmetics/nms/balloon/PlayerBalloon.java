@@ -3,7 +3,6 @@ package com.francobm.magicosmetics.nms.balloon;
 import com.francobm.magicosmetics.cache.RotationType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -11,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class PlayerBalloon {
     // Reusable scratch objects to avoid per-tick GC allocation
@@ -25,7 +25,7 @@ public abstract class PlayerBalloon {
     public static Map<UUID, PlayerBalloon> playerBalloons = new ConcurrentHashMap<>();
     protected UUID uuid;
     protected List<UUID> viewers;
-    protected List<UUID> hideViewers;
+    protected List<UUID> hideViewers = new CopyOnWriteArrayList<>();
     protected LivingEntity lendEntity;
     protected boolean floatLoop = true;
     protected double y = 0;

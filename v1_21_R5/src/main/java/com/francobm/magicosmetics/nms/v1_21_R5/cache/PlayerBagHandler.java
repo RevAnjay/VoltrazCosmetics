@@ -31,7 +31,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -204,9 +203,9 @@ public class PlayerBagHandler extends PlayerBag {
         return Collections.singletonList(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
     }
 
-    private List<Packet<?>> getBackPackHelmetPacket(ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> pairs) {
-        return Collections.singletonList(new ClientboundSetEquipmentPacket(armorStand.getId(), pairs));
-    }
+    // private List<Packet<?>> getBackPackHelmetPacket(ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> pairs) {
+    //     return Collections.singletonList(new ClientboundSetEquipmentPacket(armorStand.getId(), pairs));
+    // }
 
     @Override
     public void lookEntity(float yaw, float pitch, boolean all) {
@@ -262,6 +261,18 @@ public class PlayerBagHandler extends PlayerBag {
         pipeline.flush();
     }
 
+    private static final java.lang.reflect.Field CONNECTION_FIELD;
+    static {
+        java.lang.reflect.Field f = null;
+        try {
+            f = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
+            f.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            Bukkit.getLogger().severe("Error: Connection field not found in ServerCommonPacketListenerImpl");
+        }
+        CONNECTION_FIELD = f;
+    }
+
     private ChannelPipeline getPrivateChannelPipeline(ServerGamePacketListenerImpl playerConnection) {
         MagicCosmetics plugin = MagicCosmetics.getInstance();
         if(plugin.getServer().getPluginManager().isPluginEnabled("Denizen")){
@@ -279,12 +290,11 @@ public class PlayerBagHandler extends PlayerBag {
                 throw new RuntimeException(e);
             }
         }
+        if(CONNECTION_FIELD == null) return null;
         try {
-            Field privateConnection = ServerCommonPacketListenerImpl.class.getDeclaredField("connection");
-            privateConnection.setAccessible(true);
-            Connection networkManager = (Connection) privateConnection.get(playerConnection);
+            Connection networkManager = (Connection) CONNECTION_FIELD.get(playerConnection);
             return networkManager.channel.pipeline();
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             Bukkit.getLogger().severe("Error: Channel Pipeline not found");
             return null;
         }
