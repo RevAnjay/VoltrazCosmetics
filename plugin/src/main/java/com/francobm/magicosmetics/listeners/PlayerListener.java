@@ -77,15 +77,20 @@ public class PlayerListener implements Listener {
         } catch (Exception e) {
             MagicCosmetics.getInstance().getLogger().warning("Failed to remove packet reader for " + event.getPlayer().getName() + " - " + e.getMessage());
         }
-        if(playerData.isZone()){
-            playerData.exitZoneSync();
+        try {
+            if(playerData.isZone()){
+                playerData.exitZoneSync();
+            }
+            // Restore saved helmet/offhand items before server saves player data
+            // This prevents the cosmetic item from being saved as the player's helmet
+            playerData.clearCosmeticsToSaveData();
+        } catch (Exception e) {
+            MagicCosmetics.getInstance().getLogger().warning("Error during quit cleanup for " + event.getPlayer().getName() + ": " + e.getMessage());
+        } finally {
+            // Always remove and save — even if cleanup above threw an exception
+            PlayerData.removePlayer(playerData);
+            plugin.getSql().savePlayerAsync(playerData);
         }
-        // Restore saved helmet/offhand items before server saves player data
-        // This prevents the cosmetic item from being saved as the player's helmet
-        playerData.clearCosmeticsToSaveData();
-
-        PlayerData.removePlayer(playerData);
-        plugin.getSql().savePlayerAsync(playerData);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -210,6 +215,13 @@ public class PlayerListener implements Listener {
 
         if(savedHelmet != null && removedHelmetDupe) event.getDrops().add(savedHelmet);
         if(savedWStick != null && removedWStickDupe) event.getDrops().add(savedWStick);
+
+        if(playerData.getHat() != null && savedHelmet != null && removedHelmetDupe) {
+            playerData.getHat().forceRemove();
+        }
+        if(playerData.getWStick() != null && savedWStick != null && removedWStickDupe) {
+            playerData.getWStick().forceRemove();
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

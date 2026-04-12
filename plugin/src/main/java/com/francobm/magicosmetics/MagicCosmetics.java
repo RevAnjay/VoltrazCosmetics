@@ -405,30 +405,51 @@ public final class MagicCosmetics extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         if(proxy){
-            getServer().getMessenger().unregisterIncomingPluginChannel(this);
-            getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+            try {
+                getServer().getMessenger().unregisterIncomingPluginChannel(this);
+                getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+            } catch (Exception e) {
+                getLogger().warning("Failed to unregister plugin channels: " + e.getMessage());
+            }
         }
         if(cosmeticsManager != null) {
             cosmeticsManager.cancelTasks();
         }
-        for(Player player : Bukkit.getOnlinePlayers()){
-            if(player == null || !player.isOnline()) continue;
-            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
-            if(playerData == null) continue;
-            if(!playerData.isZone()) continue;
-            playerData.exitZoneSync();
-        }
-        sql.savePlayers();
-        sql.close();
-        if(bossBar != null) {
-            for (BossBar bar : bossBar) {
-                bar.removeAll();
+        try {
+            for(Player player : Bukkit.getOnlinePlayers()){
+                if(player == null || !player.isOnline()) continue;
+                PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+                if(playerData == null) continue;
+                if(!playerData.isZone()) continue;
+                playerData.exitZoneSync();
             }
-            bossBar.clear();
+        } catch (Exception e) {
+            getLogger().warning("Error during zone cleanup: " + e.getMessage());
         }
-        NPCsLoader.save();
-        
-        PlayerData.players.clear();
+        try {
+            if(sql != null) {
+                sql.savePlayers();
+            }
+        } catch (Exception e) {
+            getLogger().severe("Error saving player data on disable: " + e.getMessage());
+        } finally {
+            // Always clean up resources even if save fails
+            try {
+                if(sql != null) sql.close();
+            } catch (Exception e) {
+                getLogger().warning("Error closing database: " + e.getMessage());
+            }
+            if(bossBar != null) {
+                for (BossBar bar : bossBar) {
+                    bar.removeAll();
+                }
+                bossBar.clear();
+            }
+            if(NPCsLoader != null) {
+                NPCsLoader.save();
+            }
+            PlayerData.players.clear();
+        }
     }
 
     public boolean isProxy() {

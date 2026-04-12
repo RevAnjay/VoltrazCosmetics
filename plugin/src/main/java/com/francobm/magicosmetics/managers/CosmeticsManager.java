@@ -14,6 +14,10 @@ import com.francobm.magicosmetics.events.CosmeticEquipEvent;
 import com.francobm.magicosmetics.events.CosmeticUnEquipEvent;
 import com.francobm.magicosmetics.files.FileCreator;
 import com.francobm.magicosmetics.nms.NPC.NPC;
+import com.francobm.magicosmetics.nms.bag.EntityBag;
+import com.francobm.magicosmetics.nms.balloon.EntityBalloon;
+import com.francobm.magicosmetics.nms.balloon.PlayerBalloon;
+import com.francobm.magicosmetics.nms.spray.CustomSpray;
 import com.francobm.magicosmetics.utils.Utils;
 import com.francobm.magicosmetics.utils.XMaterial;
 import org.bukkit.Bukkit;
@@ -96,6 +100,7 @@ public class CosmeticsManager {
         if(otherCosmetics == null){
             otherCosmetics = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
                 for(PlayerData playerData : PlayerData.players.values()){
+                    if(playerData.getOfflinePlayer() == null) continue;
                     Player player = playerData.getOfflinePlayer().getPlayer();
                     if(player == null) continue;
                     boolean needsCosmeticUpdate = playerData.hasActiveCosmetics();
@@ -111,6 +116,7 @@ public class CosmeticsManager {
             final int[] entityCleanupCounter = {0};
             balloons = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
                 for(PlayerData playerData : PlayerData.players.values()){
+                    if(playerData.getOfflinePlayer() == null) continue;
                     if(playerData.getOfflinePlayer().getPlayer() == null) continue;
                     playerData.activeBalloon();
                 }
@@ -120,6 +126,23 @@ public class CosmeticsManager {
                 if(++entityCleanupCounter[0] >= 50) {
                     entityCleanupCounter[0] = 0;
                     EntityCache.cleanupInvalid();
+                    // Periodic cleanup of orphaned PlayerData entries (players no longer online)
+                    // Save data before removing to prevent loss if quit handler crashed
+                    PlayerData.players.entrySet().removeIf(entry -> {
+                        Player p = Bukkit.getPlayer(entry.getKey());
+                        if(p == null || !p.isOnline()) {
+                            PlayerData orphan = entry.getValue();
+                            // Skip entries that have no offlinePlayer set — likely still loading
+                            if(orphan.getOfflinePlayer() == null) return false;
+                            try {
+                                plugin.getSql().savePlayerAsync(orphan);
+                            } catch (Exception e) {
+                                plugin.getLogger().warning("Failed to save orphaned PlayerData for " + entry.getKey() + ": " + e.getMessage());
+                            }
+                            return true;
+                        }
+                        return false;
+                    });
                 }
             }, 0L, 4L);
         }
@@ -175,6 +198,36 @@ public class CosmeticsManager {
 
         EntityCache.clearAll();
         NPC.npcs.clear();
+        // Clear NMS static maps to prevent entity reference leaks
+        // Each map cleanup is wrapped in try-catch so one failure doesn't prevent the rest
+        try {
+            PlayerBalloon.playerBalloons.values().forEach(balloon -> {
+                try { balloon.remove(); } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {} finally {
+            PlayerBalloon.playerBalloons.clear();
+        }
+        try {
+            EntityBag.entityBags.values().forEach(bag -> {
+                try { bag.remove(); } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {} finally {
+            EntityBag.entityBags.clear();
+        }
+        try {
+            EntityBalloon.entitiesBalloon.values().forEach(balloon -> {
+                try { balloon.remove(); } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {} finally {
+            EntityBalloon.entitiesBalloon.clear();
+        }
+        try {
+            CustomSpray.customSprays.values().forEach(spray -> {
+                try { spray.remove(); } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {} finally {
+            CustomSpray.customSprays.clear();
+        }
     }
 
     public void reload(CommandSender sender){

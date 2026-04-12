@@ -8,6 +8,7 @@ import com.francobm.magicosmetics.nms.balloon.EntityBalloon;
 import com.francobm.magicosmetics.nms.balloon.PlayerBalloon;
 import com.francobm.magicosmetics.nms.spray.CustomSpray;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -69,32 +70,37 @@ public class SQLite extends SQL {
         try{
             connection = hikariCP.getHikariDataSource().getConnection();
             for(PlayerData player : PlayerData.players.values()){
-                player.clearCosmeticsToSaveData();
-                if(!checkInfo(player.getUniqueId())){
-                    String query = "INSERT INTO player_cosmetics (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
-                    preparedStatement = connection.prepareStatement(query);
-                    preparedStatement.setString(1, player.getUniqueId().toString());
-                    preparedStatement.setString(2, player.getOfflinePlayer().getName());
-                    preparedStatement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
-                    preparedStatement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
-                    preparedStatement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
-                    preparedStatement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                    preparedStatement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
-                    preparedStatement.setString(8, player.saveCosmetics());
-                    preparedStatement.executeUpdate();
+                try {
+                    player.clearCosmeticsToSaveData();
+                    String playerName = resolvePlayerName(player);
+                    if(!checkInfo(player.getUniqueId())){
+                        String query = "INSERT INTO player_cosmetics (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
+                        preparedStatement = connection.prepareStatement(query);
+                        preparedStatement.setString(1, player.getUniqueId().toString());
+                        preparedStatement.setString(2, playerName);
+                        preparedStatement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
+                        preparedStatement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
+                        preparedStatement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
+                        preparedStatement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
+                        preparedStatement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
+                        preparedStatement.setString(8, player.saveCosmetics());
+                        preparedStatement.executeUpdate();
 
-                }else {
-                    String query = "UPDATE player_cosmetics SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
-                    preparedStatement = connection.prepareStatement(query);
-                    preparedStatement.setString(1, player.getOfflinePlayer().getName());
-                    preparedStatement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
-                    preparedStatement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
-                    preparedStatement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
-                    preparedStatement.setString(5, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                    preparedStatement.setString(6, player.getSpray() == null ? "" : player.getSpray().getId());
-                    preparedStatement.setString(7, player.saveCosmetics());
-                    preparedStatement.setString(8, player.getUniqueId().toString());
-                    preparedStatement.executeUpdate();
+                    }else {
+                        String query = "UPDATE player_cosmetics SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
+                        preparedStatement = connection.prepareStatement(query);
+                        preparedStatement.setString(1, playerName);
+                        preparedStatement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
+                        preparedStatement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
+                        preparedStatement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
+                        preparedStatement.setString(5, player.getBalloon() == null ? "" : player.getBalloon().getId());
+                        preparedStatement.setString(6, player.getSpray() == null ? "" : player.getSpray().getId());
+                        preparedStatement.setString(7, player.saveCosmetics());
+                        preparedStatement.setString(8, player.getUniqueId().toString());
+                        preparedStatement.executeUpdate();
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to save data for player " + player.getUniqueId() + ": " + e.getMessage());
                 }
             }
         }catch (SQLException throwable) {
@@ -107,14 +113,15 @@ public class SQLite extends SQL {
     private void savePlayerInfo(PlayerData player, boolean close){
         Connection connection = null;
         PreparedStatement preparedStatement = null;
-        player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
+        ensureOfflinePlayer(player);
         try{
             connection = hikariCP.getHikariDataSource().getConnection();
+            String playerName = resolvePlayerName(player);
             if(!checkInfo(player.getUniqueId())){
                 String query = "INSERT INTO player_cosmetics (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
                 preparedStatement = connection.prepareStatement(query);
                 preparedStatement.setString(1, player.getUniqueId().toString());
-                preparedStatement.setString(2, player.getOfflinePlayer().getName());
+                preparedStatement.setString(2, playerName);
                 preparedStatement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
                 preparedStatement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
                 preparedStatement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
@@ -126,7 +133,7 @@ public class SQLite extends SQL {
             }else {
                 String query = "UPDATE player_cosmetics SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
                 preparedStatement = connection.prepareStatement(query);
-                preparedStatement.setString(1, player.getOfflinePlayer().getName());
+                preparedStatement.setString(1, playerName);
                 preparedStatement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
                 preparedStatement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
                 preparedStatement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
@@ -145,17 +152,18 @@ public class SQLite extends SQL {
 
     private CompletableFuture<Void> savePlayerInfoAsync(PlayerData player){
         // clearCosmeticsToSaveData() is already called by the listener before this method
-        player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
+        ensureOfflinePlayer(player);
         return checkInfoAsync(player.getUniqueId()).thenCompose(check -> CompletableFuture.runAsync(() -> {
             Connection connection = null;
             PreparedStatement preparedStatement = null;
             try{
                 connection = hikariCP.getHikariDataSource().getConnection();
+                String playerName = resolvePlayerName(player);
                 if(!check){
                     String query = "INSERT INTO player_cosmetics (id, UUID, Player, Hat, Bag, WStick, Balloon, Spray, Available) VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?);";
                     preparedStatement = connection.prepareStatement(query);
                     preparedStatement.setString(1, player.getUniqueId().toString());
-                    preparedStatement.setString(2, player.getOfflinePlayer().getName());
+                    preparedStatement.setString(2, playerName);
                     preparedStatement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
                     preparedStatement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
                     preparedStatement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
@@ -166,7 +174,7 @@ public class SQLite extends SQL {
                 }else {
                     String query = "UPDATE player_cosmetics SET Player = ?, Hat = ?, Bag = ?, WStick = ?, Balloon = ?, Spray = ?, Available = ? WHERE UUID = ?";
                     preparedStatement = connection.prepareStatement(query);
-                    preparedStatement.setString(1, player.getOfflinePlayer().getName());
+                    preparedStatement.setString(1, playerName);
                     preparedStatement.setString(2, player.getHat() == null ? "" : player.getHat().getId());
                     preparedStatement.setString(3, player.getBag() == null ? "" : player.getBag().getId());
                     preparedStatement.setString(4, player.getWStick() == null ? "" : player.getWStick().getId());
@@ -321,6 +329,22 @@ public class SQLite extends SQL {
             }
             return false;
         });
+    }
+
+    private void ensureOfflinePlayer(PlayerData player) {
+        if (player.getOfflinePlayer() == null) {
+            player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
+        }
+    }
+
+    private String resolvePlayerName(PlayerData player) {
+        OfflinePlayer op = player.getOfflinePlayer();
+        if (op == null) {
+            player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
+            op = player.getOfflinePlayer();
+        }
+        String name = op != null ? op.getName() : null;
+        return name != null ? name : player.getUniqueId().toString();
     }
 
     @Override

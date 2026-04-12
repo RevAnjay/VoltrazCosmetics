@@ -9,6 +9,7 @@ import com.francobm.magicosmetics.nms.balloon.EntityBalloon;
 import com.francobm.magicosmetics.nms.balloon.PlayerBalloon;
 import com.francobm.magicosmetics.nms.spray.CustomSpray;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.sql.*;
@@ -115,7 +116,7 @@ public class MySQL extends SQL{
             String query = String.format(UPSERT_SINGLE, table);
             statement = connection.prepareStatement(query);
             statement.setString(1, player.getUniqueId().toString());
-            statement.setString(2, player.getOfflinePlayer().getName());
+            statement.setString(2, resolvePlayerName(player));
             statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
             statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
             statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
@@ -139,16 +140,20 @@ public class MySQL extends SQL{
             String query = String.format(UPSERT_SINGLE, table);
             statement = connection.prepareStatement(query);
             for(PlayerData player : PlayerData.players.values()){
-                player.clearCosmeticsToSaveData();
-                statement.setString(1, player.getUniqueId().toString());
-                statement.setString(2, player.getOfflinePlayer().getName());
-                statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
-                statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
-                statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
-                statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
-                statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
-                statement.setString(8, player.saveCosmetics());
-                statement.addBatch();
+                try {
+                    player.clearCosmeticsToSaveData();
+                    statement.setString(1, player.getUniqueId().toString());
+                    statement.setString(2, resolvePlayerName(player));
+                    statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
+                    statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
+                    statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
+                    statement.setString(6, player.getBalloon() == null ? "" : player.getBalloon().getId());
+                    statement.setString(7, player.getSpray() == null ? "" : player.getSpray().getId());
+                    statement.setString(8, player.saveCosmetics());
+                    statement.addBatch();
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to save data for player " + player.getUniqueId() + ": " + e.getMessage());
+                }
             }
             statement.executeBatch();
         }catch (SQLException throwable) {
@@ -220,6 +225,7 @@ public class MySQL extends SQL{
 
     private CompletableFuture<Void> savePlayerInfoAsync(PlayerData player){
         // clearCosmeticsToSaveData() is already called by the listener before this method
+        ensureOfflinePlayer(player);
         return CompletableFuture.runAsync(() -> {
             Connection connection = null;
             PreparedStatement statement = null;
@@ -228,7 +234,7 @@ public class MySQL extends SQL{
                 String query = String.format(UPSERT_SINGLE, table);
                 statement = connection.prepareStatement(query);
                 statement.setString(1, player.getUniqueId().toString());
-                statement.setString(2, player.getOfflinePlayer().getName());
+                statement.setString(2, resolvePlayerName(player));
                 statement.setString(3, player.getHat() == null ? "" : player.getHat().getId());
                 statement.setString(4, player.getBag() == null ? "" : player.getBag().getId());
                 statement.setString(5, player.getWStick() == null ? "" : player.getWStick().getId());
@@ -286,6 +292,22 @@ public class MySQL extends SQL{
             closeConnections(preparedStatement, connection, resultSet);
         }
         return false;
+    }
+
+    private void ensureOfflinePlayer(PlayerData player) {
+        if (player.getOfflinePlayer() == null) {
+            player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
+        }
+    }
+
+    private String resolvePlayerName(PlayerData player) {
+        OfflinePlayer op = player.getOfflinePlayer();
+        if (op == null) {
+            player.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
+            op = player.getOfflinePlayer();
+        }
+        String name = op != null ? op.getName() : null;
+        return name != null ? name : player.getUniqueId().toString();
     }
 
     @Override
