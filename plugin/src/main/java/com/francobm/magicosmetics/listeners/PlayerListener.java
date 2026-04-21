@@ -129,6 +129,18 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
         PlayerData playerData = PlayerData.getPlayerIfPresent(player);
         if(playerData == null) return;
+        if(playerData.getHat() != null) {
+            playerData.getHat().setClosing(false);
+            if(playerData.getDeathBackupHelmet() != null) {
+                playerData.getHat().setCurrentItemSaved(playerData.getDeathBackupHelmet());
+            }
+        }
+        if(playerData.getWStick() != null) {
+            playerData.getWStick().setClosing(false);
+            if(playerData.getDeathBackupWStick() != null) {
+                playerData.getWStick().setCurrentItemSaved(playerData.getDeathBackupWStick());
+            }
+        }
         playerData.clearDeathBackup();
         playerData.activeCosmeticsInventory();
     }
@@ -221,6 +233,12 @@ public class PlayerListener implements Listener {
         }
         if(playerData.getWStick() != null && savedWStick != null && removedWStickDupe) {
             playerData.getWStick().forceRemove();
+        }
+        if(playerData.getHat() != null) {
+            playerData.getHat().setClosing(true);
+        }
+        if(playerData.getWStick() != null) {
+            playerData.getWStick().setClosing(true);
         }
     }
 

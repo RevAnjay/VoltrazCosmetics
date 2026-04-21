@@ -127,6 +127,11 @@ public final class MagicCosmetics extends JavaPlugin {
             case "1.21.8":
                 version = new com.francobm.magicosmetics.nms.v1_21_R5.VersionHandler();
                 break;
+            case "1.21.9":
+            case "1.21.10":
+            case "1.21.11":
+                version = new com.francobm.magicosmetics.nms.v1_21_R7.VersionHandler();
+                break;
         }
         //checkIfProxy();
         if(version == null){

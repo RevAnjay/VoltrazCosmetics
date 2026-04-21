@@ -28,6 +28,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
     private ItemStack currentItemSaved = null;
     private ItemStack combinedItem = null;
     private boolean hasDropped;
+    private volatile boolean closing = false;
 
     public Hat(String id, String name, ItemStack itemStack, int modelData, boolean colored, CosmeticType cosmeticType, Color color, boolean overlaps, String permission, boolean texture, boolean hideMenu, boolean useEmote, double offSetY, NamespacedKey namespacedKey) {
         super(id, name, itemStack, modelData, colored, cosmeticType, color, permission, texture, hideMenu, useEmote, namespacedKey);
@@ -53,6 +54,9 @@ public class Hat extends Cosmetic implements CosmeticInventory {
 
     @Override
     public void update() {
+        if(player == null || closing){
+            return;
+        }
         if(isHideCosmetic()){
             return;
         }
@@ -273,6 +277,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
 
     @Override
     public void clearClose() {
+        closing = true;
         recoverCurrentItem();
         if(!overlaps) {
             if(currentItemSaved == null) {
@@ -314,10 +319,21 @@ public class Hat extends Cosmetic implements CosmeticInventory {
             if (player.getPersistentDataContainer().has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
                 String base64 = player.getPersistentDataContainer().get(key, org.bukkit.persistence.PersistentDataType.STRING);
                 if (base64 != null && !base64.isEmpty()) {
-                    currentItemSaved = Utils.itemFromBase64(base64);
+                    ItemStack recovered = Utils.itemFromBase64(base64);
+                    if (recovered != null) {
+                        currentItemSaved = recovered;
+                    } else {
+                        MagicCosmetics.getInstance().getLogger().warning(
+                            "Failed to deserialize saved helmet for " + player.getName() + " - item data may be corrupted");
+                        // Remove corrupted PDC entry to prevent repeated failures
+                        player.getPersistentDataContainer().remove(key);
+                    }
                 }
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            MagicCosmetics.getInstance().getLogger().warning(
+                "Error recovering saved helmet for " + player.getName() + ": " + e.getMessage());
+        }
     }
 
     private void setAndSaveCurrentItem(ItemStack item) {
@@ -343,6 +359,14 @@ public class Hat extends Cosmetic implements CosmeticInventory {
 
     public void setHasDropped(boolean hasDropped) {
         this.hasDropped = hasDropped;
+    }
+
+    public boolean isClosing() {
+        return closing;
+    }
+
+    public void setClosing(boolean closing) {
+        this.closing = closing;
     }
 
     @Override

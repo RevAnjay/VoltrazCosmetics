@@ -140,3 +140,14 @@ versions/
 .gemini/
 .agents/
 skills-lock.json
+
+# BuildTools / Spigot build artifacts
+BuildData/
+BuildTools.log.txt
+BuildTools.jar
+Bukkit/
+CraftBukkit/
+Spigot/
+PortableGit*/
+apache-maven*/
+work/
