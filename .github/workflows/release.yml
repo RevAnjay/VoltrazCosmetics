@@ -36,7 +36,7 @@ jobs:
           mvn paper-nms:init -f v1_21_R1/pom.xml -B
           mvn paper-nms:init -f v1_21_R5/pom.xml -B
 
-      - name: Install Spigot NMS via BuildTools (v1_21_R2, R3, R4)
+      - name: Install Spigot NMS via BuildTools (v1_21_R2, R3, R4, R7)
         run: |
           mkdir -p ~/buildtools && cd ~/buildtools
           if [ ! -f BuildTools.jar ]; then
@@ -48,6 +48,11 @@ jobs:
               java -jar BuildTools.jar --rev ${VER} --remapped
             fi
           done
+
+          # v1_21_R7 - Minecraft 1.21.11 (uses R0.2-SNAPSHOT)
+          if [ ! -f ~/.m2/repository/org/spigotmc/spigot/1.21.11-R0.2-SNAPSHOT/spigot-1.21.11-R0.2-SNAPSHOT-remapped-mojang.jar ]; then
+            java -jar BuildTools.jar --rev 1.21.11 --remapped
+          fi
 
       - name: Build with Maven
         run: mvn clean package -DskipTests -B
