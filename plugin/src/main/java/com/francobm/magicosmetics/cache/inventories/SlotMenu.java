@@ -29,6 +29,8 @@ public class SlotMenu {
     private boolean exchangeable;
     private Cosmetic tempCosmetic;
     private ItemStack oldToken;
+    private long lastClickTime = 0;
+    private static final long CLICK_COOLDOWN_MS = 250;
 
     public SlotMenu(int slot, Items items, List<String> commands, String menu, SlotMenu slotMenu, Cosmetic cosmetic, Token token, Sound sound, ActionType... actionType) {
         this.slot = slot;
@@ -158,6 +160,10 @@ public class SlotMenu {
                 return;
             }
         }
+        // Click cooldown to prevent rapid double-click race conditions
+        long now = System.currentTimeMillis();
+        if(now - lastClickTime < CLICK_COOLDOWN_MS) return;
+        lastClickTime = now;
         playSound(player);
         for(ActionType actionType : actionType){
             switch (actionType){
@@ -316,8 +322,8 @@ public class SlotMenu {
             closeMenu(player);
             return;
         }
-        playerData.removeCosmetic(cosmetic.getId());
-        playerData.addCosmetic(cosmetic);
+        // Use existing cosmetic data from player — do NOT remove+re-add which loses
+        // currentItemSaved state (helmet stored in Hat) and causes helmet disappearance.
         if(!cosmetic.isColorBlocked()) {
             MagicCosmetics.getInstance().getCosmeticsManager().equipCosmetic(player, cosmetic.getId(), null, false);
         }

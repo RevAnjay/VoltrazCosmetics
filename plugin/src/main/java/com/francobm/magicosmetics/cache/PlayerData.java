@@ -279,8 +279,19 @@ public class PlayerData {
 
         switch (cosmetic.getCosmeticType()){
             case HAT:
+                // Preserve player's real helmet across hat transitions to prevent
+                // helmet loss during rapid equip/unequip cycles (race condition fix)
+                ItemStack preservedHelmet = null;
+                if(hat != null) {
+                    hat.recoverCurrentItem();
+                    preservedHelmet = hat.getCurrentItemSaved();
+                }
                 clearHat();
-                setHat((Hat) cosmetic);
+                Hat newHat = (Hat) cosmetic;
+                if(preservedHelmet != null && newHat.getCurrentItemSaved() == null) {
+                    newHat.setCurrentItemSaved(preservedHelmet.clone());
+                }
+                setHat(newHat);
                 break;
             case BAG:
                 clearBag();
@@ -304,8 +315,18 @@ public class PlayerData {
     public void setCosmetic(CosmeticType cosmeticType, Cosmetic cosmetic){
         switch (cosmeticType){
             case HAT:
+                // Preserve player's real helmet across hat transitions (race condition fix)
+                ItemStack savedHelmet = null;
+                if(hat != null) {
+                    hat.recoverCurrentItem();
+                    savedHelmet = hat.getCurrentItemSaved();
+                }
                 clearHat();
-                setHat((Hat) cosmetic);
+                Hat hatCosmetic = (Hat) cosmetic;
+                if(savedHelmet != null && hatCosmetic.getCurrentItemSaved() == null) {
+                    hatCosmetic.setCurrentItemSaved(savedHelmet.clone());
+                }
+                setHat(hatCosmetic);
                 break;
             case BAG:
                 clearBag();

@@ -13,8 +13,7 @@
     <artifactId>VoltrazCosmetics</artifactId>
 
         <properties>
-            <maven.compiler.source>8</maven.compiler.source>
-            <maven.compiler.target>8</maven.compiler.target>
+            <maven.compiler.release>21</maven.compiler.release>
         </properties>
 
     <build>
@@ -22,10 +21,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.14.0</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -211,7 +209,7 @@
         <dependency>
             <groupId>net.citizensnpcs</groupId>
             <artifactId>citizens-main</artifactId>
-            <version>2.0.30-SNAPSHOT</version>
+            <version>2.0.35-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
             <exclusions>
@@ -237,12 +235,12 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
+            <version>6.2.1</version>
         </dependency>
         <dependency>
             <groupId>com.sk89q.worldguard</groupId>
             <artifactId>worldguard-bukkit</artifactId>
-            <version>7.0.8</version>
+            <version>7.0.16</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -273,19 +271,8 @@
             <scope>provided</scope>
         </dependency>
         
-        <!-- Dependencies previously provided by spigot 1.17.1 implicitly -->
-        <dependency>
-            <groupId>com.mojang</groupId>
-            <artifactId>authlib</artifactId>
-            <version>1.5.21</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-            <scope>provided</scope>
-        </dependency>
+        <!-- authlib removed: provided transitively by server runtime via NMS modules -->
+        <!-- commons-lang removed: migrated to commons-lang3 (bundled in Paper) -->
     </dependencies>
 
 </project>

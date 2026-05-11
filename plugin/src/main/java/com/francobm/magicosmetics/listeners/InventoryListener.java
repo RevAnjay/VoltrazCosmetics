@@ -1,8 +1,12 @@
 package com.francobm.magicosmetics.listeners;
 
+import com.francobm.magicosmetics.MagicCosmetics;
+import com.francobm.magicosmetics.cache.PlayerData;
+import com.francobm.magicosmetics.cache.cosmetics.Hat;
 import com.francobm.magicosmetics.cache.inventories.Menu;
 import com.francobm.magicosmetics.cache.inventories.menus.FreeColoredMenu;
 import com.francobm.magicosmetics.cache.inventories.menus.TokenMenu;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -65,6 +69,26 @@ public class InventoryListener implements Listener {
         if(holder instanceof TokenMenu){
             TokenMenu menu = (TokenMenu) holder;
             menu.returnItem();
+        }
+        // Post-close hat state verification: ensure helmet slot is consistent
+        // with the hat cosmetic state after menu close (race condition fix).
+        // This catches edge cases where rapid equip/unequip + close leaves
+        // the hat state desynchronized from the actual helmet slot contents.
+        if(holder instanceof Menu){
+            Player player = (Player) event.getPlayer();
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData != null && playerData.getHat() != null) {
+                MagicCosmetics.getInstance().getServer().getScheduler()
+                    .runTaskLater(MagicCosmetics.getInstance(), () -> {
+                        if(!player.isOnline()) return;
+                        Hat hat = playerData.getHat();
+                        if(hat == null) return;
+                        // Reset closing flag since menu close is complete by now,
+                        // then force re-sync helmet slot with hat state
+                        hat.setClosing(false);
+                        hat.update();
+                    }, 2L);
+            }
         }
     }
 }
