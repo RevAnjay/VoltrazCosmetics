@@ -19,7 +19,7 @@ A cosmetic plugin for Minecraft servers that allows players to wear cosmetic ite
 ## 📋 Requirements
 
 - **Java** 21+
-- **Minecraft** 1.21 — 1.21.5+
+- **Minecraft** 1.21 — 1.21.11
 - **Server** Paper
 - **Maven** 3.6+ (for building)
 
@@ -37,7 +37,7 @@ Output JAR: `plugin/target/VoltrazCosmetics-x.jar`
 |--------|-------------|
 | `api` | Public API & base classes (`Cosmetic`, `CosmeticType`) |
 | `plugin` | Main plugin, listeners, database, cache |
-| `v1_21_R1` — `v1_21_R5` | NMS adapters for MC 1.21.x |
+| `v1_21_R1` — `v1_21_R7` | NMS adapters for MC 1.21.x |
 | `meg3_support` / `meg4_support` | ModelEngine integration |
 | `bungeecord` / `velocity` | Proxy support |
 
@@ -95,30 +95,6 @@ plugin/src/main/java/com/francobm/magicosmetics/
 ├── provider/                 # 3rd party integrations
 └── utils/                    # Utilities
 ```
-
-## 📝 Changelog
-
-### v3.2.0
-- **Breaking:** Dropped support for MC 1.16 — 1.20 (now 1.21+ only)
-- **Fix:** Helmet loss/duplication on PvP death with cosmetics equipped
-- **Fix:** PDC key preservation in `getItemWithNBTsCopy()` across all NMS versions
-- **Perf:** Removed unnecessary `ItemStack.clone()` calls in death handler
-- **Fix:** Death handler now uses single-pass iterator for drop cleaning
-- **Fix:** `keepInventory` death path now correctly backs up and restores real items
-- **Refactor:** Removed 10 legacy NMS modules (v1_16_R3 — v1_20_R4)
-- **Fix:** MCChannelHandler packet interceptor optimized across all v1_21 versions
-
-### v3.1.1
-- **Fix:** Helmets no longer disappear when a player disconnects/quits with active cosmetics
-- **Fix:** Helmets no longer disappear on death with `keepInventory: true`
-- **Fix:** Walking stick no longer replaces items in the off-hand
-- **Fix:** `clearClose()` now restores saved items in non-overlaps mode
-- **Fix:** Removed duplicate `clearCosmeticsToSaveData()` that was reverting item restoration
-- **Fix:** `PlayerData.players` now uses `ConcurrentHashMap` for thread safety
-- **Fix:** `EntityCache.entities` now uses `ConcurrentHashMap` for thread safety
-- **Fix:** Typo in `EntityCache.activeWStick()` that used `hat` instead of `wStick`
-- **Fix:** HikariCP connection pool is now properly closed on plugin disable
-- **Fix:** Added null checks for `PlayerData.getPlayer()` in all event handlers
 
 ## 📄 License
 
