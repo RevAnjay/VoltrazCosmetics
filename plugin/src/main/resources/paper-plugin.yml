@@ -1,0 +1,59 @@
+name: VoltrazCosmetics
+version: "${project.version}"
+main: xyz.voltraz.cosmetics.VoltrazCosmetics
+folia-supported: true
+api-version: "1.21"
+description: magic cosmetics for this server.
+website: https://github.com/RevAnjay/VoltrazCosmetics
+authors: [RevelX, FrancoBM]
+contributors: []
+load: POSTWORLD
+dependencies:
+  server:
+    LuckPerms:
+      required: false
+      join-classpath: true
+    PlaceholderAPI:
+      required: false
+      join-classpath: true
+    Citizens:
+      required: false
+      join-classpath: true
+    ModelEngine:
+      required: false
+      join-classpath: true
+    HuskSync:
+      required: false
+      join-classpath: true
+    MysqlPlayerDataBridge:
+      required: false
+      join-classpath: true
+    ItemsAdder:
+      required: false
+      join-classpath: true
+    Nexo:
+      required: false
+      join-classpath: true
+    Multiverse-Core:
+      required: false
+      join-classpath: true
+    Oraxen:
+      required: false
+      join-classpath: true
+    TrMenu:
+      required: false
+      join-classpath: true
+    MythicMobs:
+      required: false
+      join-classpath: true
+    SkinsRestorer:
+      required: false
+      join-classpath: true
+    Denizen:
+      required: false
+      join-classpath: true
+    My_Worlds:
+      required: false
+      join-classpath: true
+loadbefore: []
+provides: []
