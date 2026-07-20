@@ -32,11 +32,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_21_R7.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation;
 import org.bukkit.entity.*;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
@@ -60,7 +55,7 @@ public class VersionHandler extends Version {
     @Override
     public void setSpectator(Player player) {
         player.setGameMode(GameMode.SPECTATOR);
-        ServerPlayer p = ((CraftPlayer)player).getHandle();
+        ServerPlayer p = ReflectionUtils.getHandle(player);
         ClientboundPlayerInfoUpdatePacket packet = new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, p);
         try {
             Field packetField = packet.getClass().getDeclaredField("entries");
@@ -161,13 +156,13 @@ public class VersionHandler extends Version {
         for(Player p : Bukkit.getOnlinePlayers()){
             if(!p.getWorld().equals(entityLoc.getWorld())) continue;
             if(p.getLocation().distanceSquared(entityLoc) > trackingRangeSq) continue;
-            ((CraftPlayer)p).getHandle().connection.send(packet);
+            ReflectionUtils.getHandle(p).connection.send(packet);
         }
     }
 
     @Override
     public void updateTitle(Player player, String title) {
-        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
         if(player.getOpenInventory().getTopInventory().getType() != InventoryType.CHEST) return;
         ClientboundOpenScreenPacket packet = null;
         switch (player.getOpenInventory().getTopInventory().getSize()/9){
@@ -197,8 +192,8 @@ public class VersionHandler extends Version {
 
     @Override
     public void setCamera(Player player, Entity entity) {
-        net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
-        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
+        net.minecraft.world.entity.Entity e = ReflectionUtils.getHandle(entity);
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
         entityPlayer.connection.send(new ClientboundSetCameraPacket(e));
     }
 
@@ -221,26 +216,26 @@ public class VersionHandler extends Version {
     }
 
     public PufferFish spawnFakePuffer(Location location) {
-        Pufferfish entityPufferFish = new Pufferfish(EntityType.PUFFERFISH, ((CraftWorld)location.getWorld()).getHandle());
+        Pufferfish entityPufferFish = new Pufferfish(EntityType.PUFFERFISH, ReflectionUtils.getHandle(location.getWorld()));
         ReflectionUtils.absMoveTo(entityPufferFish, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (PufferFish) entityPufferFish.getBukkitEntity();
     }
 
     @Override
     public org.bukkit.entity.ArmorStand spawnArmorStand(Location location) {
-        ArmorStand armorStand = new ArmorStand(EntityType.ARMOR_STAND, ((CraftWorld)location.getWorld()).getHandle());
+        ArmorStand armorStand = new ArmorStand(EntityType.ARMOR_STAND, ReflectionUtils.getHandle(location.getWorld()));
         ReflectionUtils.absMoveTo(armorStand, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         return (org.bukkit.entity.ArmorStand) armorStand.getBukkitEntity();
     }
 
     public void showEntity(org.bukkit.entity.LivingEntity entity, Player ...viewers) {
-        net.minecraft.world.entity.LivingEntity entityClient = ((CraftLivingEntity) entity).getHandle();
+        net.minecraft.world.entity.LivingEntity entityClient = ReflectionUtils.getHandle(entity);
         entityClient.setInvisible(true);
         SynchedEntityData dataWatcher = entityClient.getEntityData();
-        ClientboundAddEntityPacket packet = new ClientboundAddEntityPacket(entityClient, 0, CraftLocation.toBlockPosition(entity.getLocation()));
+        ClientboundAddEntityPacket packet = new ClientboundAddEntityPacket(entityClient, 0, ReflectionUtils.toBlockPosition(entity.getLocation()));
         ClientboundSetEntityDataPacket metadata = new ClientboundSetEntityDataPacket(entity.getEntityId(), dataWatcher.getNonDefaultValues());
         for(Player viewer : viewers) {
-            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ReflectionUtils.getHandle(viewer);
             view.connection.send(packet);
             view.connection.send(metadata);
         }
@@ -249,30 +244,30 @@ public class VersionHandler extends Version {
     public void despawnFakeEntity(Entity entity, Player ...viewers) {
         ClientboundRemoveEntitiesPacket packet = new ClientboundRemoveEntitiesPacket(entity.getEntityId());
         for(Player viewer : viewers) {
-            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ReflectionUtils.getHandle(viewer);
             view.connection.send(packet);
         }
     }
 
     public void attachFakeEntity(Entity entity, Entity leashed, Player ...viewers) {
-        ServerPlayer entityPlayer = ((CraftPlayer) entity).getHandle();
-        ClientboundSetEntityLinkPacket packet = new ClientboundSetEntityLinkPacket(((CraftEntity)leashed).getHandle(), entityPlayer);
+        ServerPlayer entityPlayer = (ServerPlayer) ReflectionUtils.getHandle(entity);
+        ClientboundSetEntityLinkPacket packet = new ClientboundSetEntityLinkPacket((net.minecraft.world.entity.Entity) ReflectionUtils.getHandle(leashed), entityPlayer);
         for(Player viewer : viewers) {
-            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ReflectionUtils.getHandle(viewer);
             view.connection.send(packet);
         }
     }
 
     public void updatePositionFakeEntity(Entity leashed, Location location) {
-        net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
+        net.minecraft.world.entity.Entity entity = ReflectionUtils.getHandle(leashed);
         ReflectionUtils.absMoveTo(entity, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
     }
 
     public void teleportFakeEntity(Entity leashed, Set<Player> viewers) {
-        net.minecraft.world.entity.Entity entity = ((CraftEntity)leashed).getHandle();
+        net.minecraft.world.entity.Entity entity = ReflectionUtils.getHandle(leashed);
         ClientboundTeleportEntityPacket packet = ReflectionUtils.createTeleportPacket(entity);
         for(Player viewer : viewers) {
-            ServerPlayer view = ((CraftPlayer)viewer).getHandle();
+            ServerPlayer view = ReflectionUtils.getHandle(viewer);
             view.connection.send(packet);
         }
     }
@@ -367,13 +362,13 @@ public class VersionHandler extends Version {
 
     @Override
     public IRangeManager createRangeManager(Entity entity) {
-        ServerLevel level = ((CraftWorld)entity.getWorld()).getHandle();
+        ServerLevel level = ReflectionUtils.getHandle(entity.getWorld());
 
         ChunkMap.TrackedEntity trackedEntity;
         try {
             trackedEntity = level.getChunkSource().chunkMap.entityMap.get(entity.getEntityId());
         } catch (NoSuchFieldError var8) {
-            net.minecraft.world.entity.Entity nmsEntity = ((CraftEntity)entity).getHandle();
+            net.minecraft.world.entity.Entity nmsEntity = ReflectionUtils.getHandle(entity);
 
             try {
                 Field trackerField = nmsEntity.getClass().getField("tracker");

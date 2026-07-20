@@ -1,8 +1,8 @@
 package xyz.voltraz.cosmetics.nms.v1_21_R7.cache;
 
+import xyz.voltraz.cosmetics.nms.v1_21_R7.ReflectionUtils;
 import xyz.voltraz.cosmetics.nms.IRangeManager;
 import net.minecraft.server.level.ChunkMap;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import java.util.HashSet;
@@ -18,20 +18,19 @@ public class RangeManager implements IRangeManager {
 
     @Override
     public void addPlayer(Player player) {
-        tracked.seenBy.add(((CraftPlayer) player).getHandle().connection);
+        tracked.seenBy.add(ReflectionUtils.getHandle(player).connection);
     }
 
     @Override
     public void removePlayer(Player player) {
-        tracked.seenBy.remove(((CraftPlayer) player).getHandle().connection);
+        tracked.seenBy.remove(ReflectionUtils.getHandle(player).connection);
     }
 
     @Override
     public Set<Player> getPlayerInRange() {
         Set<Player> list = new HashSet<>();
         if(tracked == null) return list;
-        tracked.seenBy.forEach(serverServerGamePacketListenerImpl -> list.add(serverServerGamePacketListenerImpl.getPlayer().getBukkitEntity()));
+        tracked.seenBy.forEach(c -> list.add(c.getPlayer().getBukkitEntity()));
         return list;
     }
 }
-

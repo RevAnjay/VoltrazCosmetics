@@ -23,10 +23,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_21_R7.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R7.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -51,8 +47,8 @@ public class PlayerBagHandler extends PlayerBag {
         this.backPackItemForMe = backPackItemForMe;
         this.rangeManager = rangeManager;
         Player player = getPlayer();
-        entityPlayer = ((CraftPlayer) player).getHandle();
-        ServerLevel world = ((CraftWorld) player.getWorld()).getHandle();
+        entityPlayer = ReflectionUtils.getHandle(player);
+        ServerLevel world = ReflectionUtils.getHandle(player.getWorld());
 
         armorStand = new ArmorStand(EntityType.ARMOR_STAND, world);
         ReflectionUtils.absMoveTo(armorStand, player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ(), player.getLocation().getYaw(), 0);
@@ -94,7 +90,7 @@ public class PlayerBagHandler extends PlayerBag {
         sendPackets(player, getBackPackSpawn(backPackItemForMe == null ? backPackItem : backPackItemForMe));
         if(height > 0){
             for(int i = 0; i < height; i++) {
-                AreaEffectCloud entityAreaEffectCloud = new AreaEffectCloud(EntityType.AREA_EFFECT_CLOUD, ((CraftWorld)player.getWorld()).getHandle());
+                AreaEffectCloud entityAreaEffectCloud = new AreaEffectCloud(EntityType.AREA_EFFECT_CLOUD, ReflectionUtils.getHandle(player.getWorld()));
                 entityAreaEffectCloud.setRadius(0f);
                 entityAreaEffectCloud.setInvisible(true);
                 ReflectionUtils.absMoveTo(entityAreaEffectCloud, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
@@ -161,8 +157,8 @@ public class PlayerBagHandler extends PlayerBag {
 
     private List<Packet<?>> getBackPackSpawn(ItemStack backpackItem) {
         ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-        list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(backpackItem)));
-        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(armorStand, 0, CraftLocation.toBlockPosition(armorStand.getBukkitEntity().getLocation()));
+        list.add(new Pair<>(EquipmentSlot.HEAD, ReflectionUtils.asNMSCopy(backpackItem)));
+        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(armorStand, 0, ReflectionUtils.toBlockPosition(armorStand.getBukkitEntity().getLocation()));
         ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues());
         ClientboundSetPassengersPacket mountEntity = new ClientboundSetPassengersPacket(entityPlayer);
         ClientboundSetEquipmentPacket equip = new ClientboundSetEquipmentPacket(armorStand.getId(), list);
@@ -170,7 +166,7 @@ public class PlayerBagHandler extends PlayerBag {
     }
 
     private List<Packet<?>> getCloudsSpawn(AreaEffectCloud entityAreaEffectCloud) {
-        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(entityAreaEffectCloud, 0, CraftLocation.toBlockPosition(entityAreaEffectCloud.getBukkitEntity().getLocation()));
+        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(entityAreaEffectCloud, 0, ReflectionUtils.toBlockPosition(entityAreaEffectCloud.getBukkitEntity().getLocation()));
         ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(entityAreaEffectCloud.getId(), entityAreaEffectCloud.getEntityData().getNonDefaultValues());
         return Arrays.asList(spawnEntity, entityMetadata);
     }
@@ -199,7 +195,7 @@ public class PlayerBagHandler extends PlayerBag {
 
     private List<Packet<?>> getBackPackHelmetPacket(ItemStack itemStack) {
         ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-        list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
+        list.add(new Pair<>(EquipmentSlot.HEAD, ReflectionUtils.asNMSCopy(itemStack)));
         return Collections.singletonList(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
     }
 
@@ -254,7 +250,7 @@ public class PlayerBagHandler extends PlayerBag {
     }
 
     private void sendPackets(Player player, List<Packet<?>> packets) {
-        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().connection);
+        final ChannelPipeline pipeline = getPrivateChannelPipeline(ReflectionUtils.getHandle(player).connection);
         if(pipeline == null) return;
         for(Packet<?> packet : packets)
             pipeline.write(packet);

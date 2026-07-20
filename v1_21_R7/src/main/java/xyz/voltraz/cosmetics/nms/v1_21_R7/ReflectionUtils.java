@@ -5,6 +5,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import org.bukkit.Bukkit;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -45,6 +48,21 @@ public class ReflectionUtils {
     private static Class<?> craftChatMessageClass;
     private static Method craftChatMessageFromString;
     
+    // CraftEntity/CraftPlayer/CraftWorld helpers (flat package for Canvas/Folia 1.21.11+)
+    private static Class<?> craftEntityClass;
+    private static Class<?> craftPlayerClass;
+    private static Class<?> craftWorldClass;
+    private static Class<?> craftArmorStandClass;
+    private static Class<?> craftLivingEntityClass;
+    private static Class<?> craftServerClass;
+    private static Class<?> craftLocationClass;
+    private static Method craftEntityGetHandle;
+    private static Method craftPlayerGetHandle;
+    private static Method craftWorldGetHandle;
+    private static Method craftArmorStandGetHandle;
+    private static Method craftLivingEntityGetHandle;
+    private static Method craftServerGetServer;
+    private static Method craftLocationToBlockPosition;
     static {
         // CompoundTag
         try {
@@ -192,10 +210,84 @@ public class ReflectionUtils {
                 }
             }
         }
+
+        // CraftEntity / CraftPlayer / CraftWorld - flat package for Canvas/Folia 1.21.11+
+        try {
+            craftEntityClass = Class.forName("org.bukkit.craftbukkit.entity.CraftEntity");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftEntityClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.entity.CraftEntity");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        try {
+            craftPlayerClass = Class.forName("org.bukkit.craftbukkit.entity.CraftPlayer");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftPlayerClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        try {
+            craftWorldClass = Class.forName("org.bukkit.craftbukkit.CraftWorld");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftWorldClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.CraftWorld");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        if (craftEntityClass != null && craftPlayerClass != null && craftWorldClass != null) {
+            try {
+                craftEntityGetHandle = craftEntityClass.getMethod("getHandle");
+                craftPlayerGetHandle = craftPlayerClass.getMethod("getHandle");
+                craftWorldGetHandle = craftWorldClass.getMethod("getHandle");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // CraftArmorStand - flat package for Canvas/Folia 1.21.11+
+        try {
+            craftArmorStandClass = Class.forName("org.bukkit.craftbukkit.entity.CraftArmorStand");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftArmorStandClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.entity.CraftArmorStand");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        // CraftLivingEntity - flat package
+        try {
+            craftLivingEntityClass = Class.forName("org.bukkit.craftbukkit.entity.CraftLivingEntity");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftLivingEntityClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.entity.CraftLivingEntity");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        // CraftServer - flat package
+        try {
+            craftServerClass = Class.forName("org.bukkit.craftbukkit.CraftServer");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftServerClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.CraftServer");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        // CraftLocation - flat package
+        try {
+            craftLocationClass = Class.forName("org.bukkit.craftbukkit.util.CraftLocation");
+        } catch (ClassNotFoundException e) {
+            try {
+                craftLocationClass = Class.forName("org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation");
+            } catch (ClassNotFoundException ex) { ex.printStackTrace(); }
+        }
+        if (craftArmorStandClass != null && craftLivingEntityClass != null && craftServerClass != null && craftLocationClass != null) {
+            try {
+                craftArmorStandGetHandle = craftArmorStandClass.getMethod("getHandle");
+                craftLivingEntityGetHandle = craftLivingEntityClass.getMethod("getHandle");
+                craftServerGetServer = craftServerClass.getMethod("getServer");
+                craftLocationToBlockPosition = craftLocationClass.getMethod("toBlockPosition", org.bukkit.Location.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     // CompoundTag
-    @SuppressWarnings("unchecked")
     public static Set<String> getKeys(CompoundTag tag) {
         if (compoundTagKeySetMethod != null) {
             try {
@@ -318,6 +410,86 @@ public class ReflectionUtils {
         if (craftChatMessageFromString != null) {
             try {
                 return (net.minecraft.network.chat.Component) craftChatMessageFromString.invoke(null, text);
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    // CraftEntity/CraftPlayer/CraftWorld helpers
+    public static ServerPlayer getHandle(org.bukkit.entity.Player player) {
+        if (craftPlayerGetHandle != null && craftPlayerClass != null) {
+            try {
+                if (craftPlayerClass.isInstance(player)) {
+                    return (ServerPlayer) craftPlayerGetHandle.invoke(player);
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    public static net.minecraft.world.entity.Entity getHandle(org.bukkit.entity.Entity entity) {
+        if (craftEntityGetHandle != null && craftEntityClass != null) {
+            try {
+                if (craftEntityClass.isInstance(entity)) {
+                    return (net.minecraft.world.entity.Entity) craftEntityGetHandle.invoke(entity);
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    public static net.minecraft.server.level.ServerLevel getHandle(org.bukkit.World world) {
+        if (craftWorldGetHandle != null && craftWorldClass != null) {
+            try {
+                if (craftWorldClass.isInstance(world)) {
+                    return (net.minecraft.server.level.ServerLevel) craftWorldGetHandle.invoke(world);
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    // CraftArmorStand / CraftLivingEntity helpers
+    public static net.minecraft.world.entity.decoration.ArmorStand getHandle(org.bukkit.entity.ArmorStand armorStand) {
+        if (craftArmorStandGetHandle != null && craftArmorStandClass != null) {
+            try {
+                if (craftArmorStandClass.isInstance(armorStand)) {
+                    return (net.minecraft.world.entity.decoration.ArmorStand) craftArmorStandGetHandle.invoke(armorStand);
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    public static net.minecraft.world.entity.LivingEntity getHandle(org.bukkit.entity.LivingEntity entity) {
+        if (craftLivingEntityGetHandle != null && craftLivingEntityClass != null) {
+            try {
+                if (craftLivingEntityClass.isInstance(entity)) {
+                    return (net.minecraft.world.entity.LivingEntity) craftLivingEntityGetHandle.invoke(entity);
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    // CraftServer helper
+    public static MinecraftServer getServer() {
+        if (craftServerGetServer != null && craftServerClass != null) {
+            try {
+                Object server = Bukkit.getServer();
+                if (craftServerClass.isInstance(server)) {
+                    return (MinecraftServer) craftServerGetServer.invoke(server);
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+        return null;
+    }
+
+    // CraftLocation helper
+    public static net.minecraft.core.BlockPos toBlockPosition(org.bukkit.Location location) {
+        if (craftLocationToBlockPosition != null && craftLocationClass != null) {
+            try {
+                return (net.minecraft.core.BlockPos) craftLocationToBlockPosition.invoke(null, location);
             } catch (Exception e) { e.printStackTrace(); }
         }
         return null;

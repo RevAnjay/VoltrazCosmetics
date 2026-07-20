@@ -15,11 +15,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_21_R7.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R7.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -38,7 +33,7 @@ public class EntityBagHandler extends EntityBag {
         this.distance = distance;
         this.entity = entity;
         entityBags.put(uuid, this);
-        ServerLevel world = ((CraftWorld) entity.getWorld()).getHandle();
+        ServerLevel world = ReflectionUtils.getHandle(entity.getWorld());
 
         armorStand = new ArmorStand(EntityType.ARMOR_STAND, world);
         ReflectionUtils.absMoveTo(armorStand, entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ(), entity.getLocation().getYaw(), 0);
@@ -68,8 +63,8 @@ public class EntityBagHandler extends EntityBag {
         Location location = getEntity().getLocation();
         ReflectionUtils.absMoveTo(armorStand, location.getX(), location.getY(), location.getZ(), location.getYaw(), 0);
 
-        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        entityPlayer.connection.send(new ClientboundAddEntityPacket(armorStand, 0, CraftLocation.toBlockPosition(location)));
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
+        entityPlayer.connection.send(new ClientboundAddEntityPacket(armorStand, 0, ReflectionUtils.toBlockPosition(location)));
         entityPlayer.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
         addPassenger(player, getEntity(), armorStand.getBukkitEntity());
         players.add(player.getUniqueId());
@@ -103,8 +98,8 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-            net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
+            ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
+            net.minecraft.world.entity.Entity e = ReflectionUtils.getHandle(entity);
             ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
                 packetDataSerializer.writeVarInt(e.getId());
                 packetDataSerializer.writeVarIntArray(new int[]{armorStand.getId()});
@@ -122,9 +117,9 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-            net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
-            net.minecraft.world.entity.Entity pass = ((CraftEntity)passenger).getHandle();
+            ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
+            net.minecraft.world.entity.Entity e = ReflectionUtils.getHandle(entity);
+            net.minecraft.world.entity.Entity pass = ReflectionUtils.getHandle(entity);
 
             ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
                 packetDataSerializer.writeVarInt(e.getId());
@@ -137,9 +132,9 @@ public class EntityBagHandler extends EntityBag {
 
     @Override
     public void addPassenger(Player player, Entity entity, Entity passenger) {
-        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        net.minecraft.world.entity.Entity e = ((CraftEntity)entity).getHandle();
-        net.minecraft.world.entity.Entity pass = ((CraftEntity)passenger).getHandle();
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
+        net.minecraft.world.entity.Entity e = ReflectionUtils.getHandle(entity);
+        net.minecraft.world.entity.Entity pass = ReflectionUtils.getHandle(entity);
 
         ClientboundSetPassengersPacket packetPlayOutMount = this.createDataSerializer(packetDataSerializer -> {
             packetDataSerializer.writeVarInt(e.getId());
@@ -151,7 +146,7 @@ public class EntityBagHandler extends EntityBag {
 
     @Override
     public void remove(Player player) {
-        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
         connection.send(new ClientboundRemoveEntitiesPacket(armorStand.getId()));
         players.remove(player.getUniqueId());
     }
@@ -164,9 +159,9 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+            ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
             ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-            list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
+            list.add(new Pair<>(EquipmentSlot.HEAD, ReflectionUtils.asNMSCopy(itemStack)));
             connection.send(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
         }
     }
@@ -180,7 +175,7 @@ public class EntityBagHandler extends EntityBag {
                 players.remove(uuid);
                 continue;
             }
-            ServerGamePacketListenerImpl connection = ((CraftPlayer) player).getHandle().connection;
+            ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
             connection.send(new ClientboundRotateHeadPacket(armorStand, (byte) (yaw * 256 / 360)));
             connection.send(new ClientboundMoveEntityPacket.Rot(armorStand.getId(), (byte) (yaw * 256 / 360), (byte)0, true));
         }

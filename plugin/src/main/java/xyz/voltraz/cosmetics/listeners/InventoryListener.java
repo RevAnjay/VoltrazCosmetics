@@ -78,16 +78,15 @@ public class InventoryListener implements Listener {
             Player player = (Player) event.getPlayer();
             PlayerData playerData = PlayerData.getPlayerIfPresent(player);
             if(playerData != null && playerData.getHat() != null) {
-                VoltrazCosmetics.getInstance().getServer().getScheduler()
-                    .runTaskLater(VoltrazCosmetics.getInstance(), () -> {
-                        if(!player.isOnline()) return;
-                        Hat hat = playerData.getHat();
-                        if(hat == null) return;
-                        // Reset closing flag since menu close is complete by now,
-                        // then force re-sync helmet slot with hat state
-                        hat.setClosing(false);
-                        hat.update();
-                    }, 2L);
+                xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLater(VoltrazCosmetics.getInstance(), () -> {
+                    if(!player.isOnline()) return;
+                    Hat hat = playerData.getHat();
+                    if(hat == null) return;
+                    // Reset closing flag since menu close is complete by now,
+                    // then force re-sync helmet slot with hat state
+                    hat.setClosing(false);
+                    hat.update();
+                }, 2L);
             }
         }
     }

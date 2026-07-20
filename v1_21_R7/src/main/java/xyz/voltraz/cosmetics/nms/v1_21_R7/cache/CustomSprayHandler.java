@@ -20,10 +20,6 @@ import net.minecraft.world.entity.decoration.ItemFrame;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_21_R7.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R7.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
@@ -46,12 +42,12 @@ public class CustomSprayHandler extends CustomSpray {
         players = new CopyOnWriteArrayList<>(new ArrayList<>());
         this.uuid = player.getUniqueId();
         customSprays.put(uuid, this);
-        ServerLevel world = ((CraftWorld)player.getWorld()).getHandle();
+        ServerLevel world = ReflectionUtils.getHandle(player.getWorld());
         this.enumDirection = getDirection(blockFace);
         itemFrame = new ItemFrame(EntityType.ITEM_FRAME, world);
         this.entity = (org.bukkit.entity.ItemFrame) itemFrame.getBukkitEntity();
         this.location = location;
-        this.itemStack = CraftItemStack.asNMSCopy(itemStack);
+        this.itemStack = ReflectionUtils.asNMSCopy(itemStack);
         this.mapView = mapView;
         this.rotation = rotation;
         ReflectionUtils.absMoveTo(itemFrame, location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
@@ -125,7 +121,7 @@ public class CustomSprayHandler extends CustomSpray {
     }
 
     private List<Packet<?>> spawnItemFrame() {
-        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(itemFrame, enumDirection.get3DDataValue(), CraftLocation.toBlockPosition(location));
+        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(itemFrame, enumDirection.get3DDataValue(), ReflectionUtils.toBlockPosition(location));
         ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(itemFrame.getId(), itemFrame.getEntityData().getNonDefaultValues());
         return Arrays.asList(spawnEntity, entityMetadata);
     }
@@ -135,7 +131,7 @@ public class CustomSprayHandler extends CustomSpray {
     }
 
     private void sendPackets(Player player, List<Packet<?>> packets) {
-        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().connection);
+        final ChannelPipeline pipeline = getPrivateChannelPipeline(ReflectionUtils.getHandle(player).connection);
         if(pipeline == null) return;
         for(Packet<?> packet : packets)
             pipeline.write(packet);

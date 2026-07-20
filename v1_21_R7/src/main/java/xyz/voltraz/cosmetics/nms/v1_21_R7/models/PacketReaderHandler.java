@@ -9,8 +9,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+
+import xyz.voltraz.cosmetics.nms.v1_21_R7.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -19,7 +20,7 @@ import java.lang.reflect.Method;
 public class PacketReaderHandler extends PacketReader{
 
     public void injectPlayer(Player player) {
-        ServerPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
         MCChannelHandler cdh = new MCChannelHandler(entityPlayer);
         ChannelPipeline pipeline = getPrivateChannelPipeline(entityPlayer.connection);
         if(pipeline == null) return;
@@ -32,8 +33,8 @@ public class PacketReaderHandler extends PacketReader{
     }
 
     public void removePlayer(Player player) {
-        CraftPlayer craftPlayer = (CraftPlayer) player;
-        Channel channel = getPrivateChannel(craftPlayer.getHandle().connection);
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
+        Channel channel = getPrivateChannel(entityPlayer.connection);
         if(channel == null) return;
         channel.eventLoop().submit(() -> {
             try {

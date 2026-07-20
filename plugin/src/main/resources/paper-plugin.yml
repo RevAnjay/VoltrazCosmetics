@@ -6,7 +6,6 @@ api-version: "1.21"
 description: magic cosmetics for this server.
 website: https://github.com/RevAnjay/VoltrazCosmetics
 authors: [RevelX, FrancoBM]
-contributors: []
 load: POSTWORLD
 dependencies:
   server:
@@ -55,5 +54,3 @@ dependencies:
     My_Worlds:
       required: false
       join-classpath: true
-loadbefore: []
-provides: []

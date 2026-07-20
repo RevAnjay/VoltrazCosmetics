@@ -19,7 +19,6 @@ import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_21_R7.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -105,13 +104,13 @@ public class MCChannelHandler extends ChannelDuplexHandler {
             if(playerData == null) return;
             Hat hat = playerData.getHat();
             if(hat == null) return;
-            event = new CosmeticInventoryUpdateEvent(player, CosmeticType.HAT, hat, CraftItemStack.asBukkitCopy(itemStack));
+            event = new CosmeticInventoryUpdateEvent(player, CosmeticType.HAT, hat, ReflectionUtils.asBukkitCopy(itemStack));
         }else if(slot == 45){
             PlayerData playerData = getPlayerDataIfPresent(player);
             if(playerData == null) return;
             WStick wStick = playerData.getWStick();
             if(wStick == null) return;
-            event = new CosmeticInventoryUpdateEvent(player, CosmeticType.WALKING_STICK, wStick, CraftItemStack.asBukkitCopy(itemStack));
+            event = new CosmeticInventoryUpdateEvent(player, CosmeticType.WALKING_STICK, wStick, ReflectionUtils.asBukkitCopy(itemStack));
         }else {
             return;
         }

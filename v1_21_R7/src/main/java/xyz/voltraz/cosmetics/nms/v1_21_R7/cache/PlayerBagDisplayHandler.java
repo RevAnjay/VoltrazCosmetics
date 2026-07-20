@@ -20,10 +20,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_21_R7.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R7.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -54,8 +50,8 @@ public class PlayerBagDisplayHandler extends PlayerBag {
         this.backPackItemForMe = backPackItemForMe;
         this.rangeManager = rangeManager;
         Player player = getPlayer();
-        entityPlayer = ((CraftPlayer) player).getHandle();
-        ServerLevel world = ((CraftWorld) player.getWorld()).getHandle();
+        entityPlayer = ReflectionUtils.getHandle(player);
+        ServerLevel world = ReflectionUtils.getHandle(player.getWorld());
 
         backPack = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, world);
         backpackId = backPack.getId();
@@ -140,8 +136,8 @@ public class PlayerBagDisplayHandler extends PlayerBag {
 
     private List<Packet<?>> getBackPackSpawn(ItemStack backpackItem, float height) {
         backPack.setTransformation(new Transformation(new Vector3f(0, height, -0.3f), new Quaternionf(), new Vector3f(1, 1, 1), new Quaternionf()));
-        backPack.setItemStack(CraftItemStack.asNMSCopy(backpackItem));
-        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(backPack, 0, CraftLocation.toBlockPosition(entityPlayer.getBukkitEntity().getLocation()));
+        backPack.setItemStack(ReflectionUtils.asNMSCopy(backpackItem));
+        ClientboundAddEntityPacket spawnEntity = new ClientboundAddEntityPacket(backPack, 0, ReflectionUtils.toBlockPosition(entityPlayer.getBukkitEntity().getLocation()));
         ClientboundSetEntityDataPacket entityMetadata = new ClientboundSetEntityDataPacket(backPack.getId(), backPack.getEntityData().getNonDefaultValues());
         ClientboundSetPassengersPacket mountEntity = new ClientboundSetPassengersPacket(entityPlayer);
         return Arrays.asList(spawnEntity, entityMetadata, mountEntity);
@@ -162,7 +158,7 @@ public class PlayerBagDisplayHandler extends PlayerBag {
     }
 
     private List<Packet<?>> getBackPackHelmetPacket(ItemStack itemStack) {
-        backPack.setItemStack(CraftItemStack.asNMSCopy(itemStack));
+        backPack.setItemStack(ReflectionUtils.asNMSCopy(itemStack));
         return Collections.singletonList(new ClientboundSetEntityDataPacket(backPack.getId(), backPack.getEntityData().getNonDefaultValues()));
     }
 
@@ -216,7 +212,7 @@ public class PlayerBagDisplayHandler extends PlayerBag {
     }
 
     private void sendPackets(Player player, List<Packet<?>> packets) {
-        final ChannelPipeline pipeline = getPrivateChannelPipeline(((CraftPlayer) player).getHandle().connection);
+        final ChannelPipeline pipeline = getPrivateChannelPipeline(ReflectionUtils.getHandle(player).connection);
         if(pipeline == null) return;
         for(Packet<?> packet : packets)
             pipeline.write(packet);

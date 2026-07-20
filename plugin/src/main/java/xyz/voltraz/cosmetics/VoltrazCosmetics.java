@@ -392,10 +392,27 @@ public final class VoltrazCosmetics extends JavaPlugin {
     }
 
     public void registerCommands(){
-        getCommand("magicosmetics").setExecutor(new Command());
-        getCommand("magicosmetics").setTabCompleter(new Command());
+        try {
+            // Paper plugin: getCommand() is disabled, register via CommandMap reflection
+            var server = getServer();
+            var getCommandMap = server.getClass().getMethod("getCommandMap");
+            var commandMap = getCommandMap.invoke(server);
+            var cmd = new org.bukkit.command.Command("magicosmetics", "simple command.", "/<command>", java.util.List.of("cosmetics", "mcosmetics", "magiccos")) {
+                @Override
+                public boolean execute(@org.jetbrains.annotations.NotNull org.bukkit.command.CommandSender sender, @org.jetbrains.annotations.NotNull String label, @org.jetbrains.annotations.NotNull String[] args) {
+                    return new Command().onCommand(sender, this, label, args);
+                }
+                @Override
+                public @org.jetbrains.annotations.NotNull java.util.List<String> tabComplete(@org.jetbrains.annotations.NotNull org.bukkit.command.CommandSender sender, @org.jetbrains.annotations.NotNull String alias, @org.jetbrains.annotations.NotNull String[] args) {
+                    return new Command().onTabComplete(sender, this, alias, args);
+                }
+            };
+            var registerMethod = commandMap.getClass().getMethod("register", String.class, org.bukkit.command.Command.class);
+            registerMethod.invoke(commandMap, "VoltrazCosmetics", cmd);
+        } catch (Exception e) {
+            getLogger().severe("Failed to register commands: " + e.getMessage());
+        }
     }
-
     @Override
     public void onDisable() {
         // Plugin shutdown logic

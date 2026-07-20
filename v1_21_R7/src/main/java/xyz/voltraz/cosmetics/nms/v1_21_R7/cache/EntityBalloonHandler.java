@@ -16,11 +16,6 @@ import net.minecraft.world.entity.animal.fish.Pufferfish;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_21_R7.CraftWorld;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_21_R7.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_21_R7.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_21_R7.util.CraftLocation;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -54,7 +49,7 @@ public class EntityBalloonHandler extends EntityBalloon {
         this.invisibleLeash = invisibleLeash;
         entitiesBalloon.put(uuid, this);
         this.entity = (org.bukkit.entity.LivingEntity) entity;
-        ServerLevel world = ((CraftWorld)entity.getWorld()).getHandle();
+        ServerLevel world = ReflectionUtils.getHandle(entity.getWorld());
 
         Location location = entity.getLocation().clone().add(0, space, 0);
         location = location.clone().add(entity.getLocation().clone().getDirection().multiply(-1));
@@ -92,14 +87,14 @@ public class EntityBalloonHandler extends EntityBalloon {
         if(!getEntity().getWorld().equals(player.getWorld())) return;
         if(getEntity().getLocation().distanceSquared(player.getLocation()) > distance) return;
 
-        ServerPlayer entityPlayer = ((CraftPlayer)player).getHandle();
-        entityPlayer.connection.send(new ClientboundAddEntityPacket(armorStand, 0, CraftLocation.toBlockPosition(armorStand.getBukkitEntity().getLocation())));
+        ServerPlayer entityPlayer = ReflectionUtils.getHandle(player);
+        entityPlayer.connection.send(new ClientboundAddEntityPacket(armorStand, 0, ReflectionUtils.toBlockPosition(armorStand.getBukkitEntity().getLocation())));
         entityPlayer.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
 
-        entityPlayer.connection.send(new ClientboundAddEntityPacket(leashed, 0, CraftLocation.toBlockPosition(leashed.getBukkitEntity().getLocation())));
+        entityPlayer.connection.send(new ClientboundAddEntityPacket(leashed, 0, ReflectionUtils.toBlockPosition(leashed.getBukkitEntity().getLocation())));
         entityPlayer.connection.send(new ClientboundSetEntityDataPacket(leashed.getId(), leashed.getEntityData().getNonDefaultValues()));
         if(!invisibleLeash) {
-            entityPlayer.connection.send(new ClientboundSetEntityLinkPacket(leashed, ((CraftEntity) getEntity()).getHandle()));
+            entityPlayer.connection.send(new ClientboundSetEntityLinkPacket(leashed, ReflectionUtils.getHandle(getEntity())));
         }
         //client settings
         players.add(player.getUniqueId());
@@ -128,7 +123,7 @@ public class EntityBalloonHandler extends EntityBalloon {
 
     @Override
     public void remove(Player player) {
-        ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+        ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
         connection.send(new ClientboundRemoveEntitiesPacket(armorStand.getId(), leashed.getId()));
         players.remove(player.getUniqueId());
     }
@@ -141,27 +136,27 @@ public class EntityBalloonHandler extends EntityBalloon {
         }
         for (UUID uuid : players) {
             ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-            list.add(new Pair<>(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(itemStack)));
+            list.add(new Pair<>(EquipmentSlot.HEAD, ReflectionUtils.asNMSCopy(itemStack)));
             Player player = Bukkit.getPlayer(uuid);
             if(player == null) {
                 players.remove(uuid);
                 continue;
             }
-            ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+            ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
             connection.send(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
         }
     }
 
     public void setItemBigHead(ItemStack itemStack) {
         ArrayList<Pair<EquipmentSlot, net.minecraft.world.item.ItemStack>> list = new ArrayList<>();
-        list.add(new Pair<>(EquipmentSlot.MAINHAND, CraftItemStack.asNMSCopy(itemStack)));
+        list.add(new Pair<>(EquipmentSlot.MAINHAND, ReflectionUtils.asNMSCopy(itemStack)));
         for (UUID uuid : players) {
             Player player = Bukkit.getPlayer(uuid);
             if(player == null) {
                 players.remove(uuid);
                 continue;
             }
-            ServerGamePacketListenerImpl connection = ((CraftPlayer)player).getHandle().connection;
+            ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
             connection.send(new ClientboundSetEquipmentPacket(armorStand.getId(), list));
         }
     }
@@ -175,7 +170,7 @@ public class EntityBalloonHandler extends EntityBalloon {
                 players.remove(uuid);
                 continue;
             }
-            ServerGamePacketListenerImpl connection = ((CraftPlayer) player).getHandle().connection;
+            ServerGamePacketListenerImpl connection = ReflectionUtils.getHandle(player).connection;
             connection.send(new ClientboundRotateHeadPacket(armorStand, (byte) (yaw * 256 / 360)));
             connection.send(new ClientboundMoveEntityPacket.Rot(armorStand.getId(), (byte) (yaw * 256 / 360), (byte)0, true));
             connection.send(new ClientboundRotateHeadPacket(leashed, (byte) (yaw * 256 / 360)));
@@ -290,7 +285,7 @@ public class EntityBalloonHandler extends EntityBalloon {
                 players.remove(uuid);
                 continue;
             }
-            ServerPlayer p = ((CraftPlayer)player).getHandle();
+            ServerPlayer p = ReflectionUtils.getHandle(player);
             p.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
             p.connection.send(ReflectionUtils.createTeleportPacket(leashed));
             p.connection.send(ReflectionUtils.createTeleportPacket(armorStand));
@@ -405,7 +400,7 @@ public class EntityBalloonHandler extends EntityBalloon {
                 players.remove(uuid);
                 continue;
             }
-            ServerPlayer p = ((CraftPlayer)player).getHandle();
+            ServerPlayer p = ReflectionUtils.getHandle(player);
             p.connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
             p.connection.send(ReflectionUtils.createTeleportPacket(leashed));
             p.connection.send(ReflectionUtils.createTeleportPacket(armorStand));
@@ -457,7 +452,7 @@ public class EntityBalloonHandler extends EntityBalloon {
                 players.remove(uuid);
                 continue;
             }
-            ((CraftPlayer)player).getHandle().connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
+            ReflectionUtils.getHandle(player).connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
         }
     }
 
@@ -480,7 +475,7 @@ public class EntityBalloonHandler extends EntityBalloon {
                 players.remove(uuid);
                 continue;
             }
-            ((CraftPlayer)player).getHandle().connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
+            ReflectionUtils.getHandle(player).connection.send(new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().getNonDefaultValues()));
         }
     }
 

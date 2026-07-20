@@ -10,7 +10,7 @@ public final class FoliaUtil {
 
     public static Object runTaskTimer(Plugin plugin, Runnable task, long delay, long period) {
         if (isFolia()) {
-            return Bukkit.getGlobalRegionScheduler().runAtFixedRate(plugin, st -> task.run(), delay, period);
+            return Bukkit.getGlobalRegionScheduler().runAtFixedRate(plugin, st -> task.run(), Math.max(delay, 1), Math.max(period, 1));
         } else {
             return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
         }
