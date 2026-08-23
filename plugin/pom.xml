@@ -4,8 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>magicosmetics</artifactId>
-        <groupId>com.francobm</groupId>
+        <groupId>xyz.voltraz</groupId>
         <version>1.4-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <version>3.3.0</version>
     <modelVersion>4.0.0</modelVersion>
@@ -256,14 +257,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- MultiverseCore dependency removed: MVTeleportEvent no longer exists in MV5,
-             and PlayerListener.onTeleport handles all teleport events via Bukkit API -->
-        <dependency>
-            <groupId>com.onarandombox.multiverseinventories</groupId> <!-- Don't forget to replace this -->
-            <artifactId>Multiverse-Inventories</artifactId> <!-- Replace this as well -->
-            <version>4.2.4-SNAPSHOT</version> <!-- This too -->
-            <scope>provided</scope>
-        </dependency>
         
         <!-- authlib removed: provided transitively by server runtime via NMS modules -->
         <!-- commons-lang removed: migrated to commons-lang3 (bundled in Paper) -->

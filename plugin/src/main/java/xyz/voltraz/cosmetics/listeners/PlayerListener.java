@@ -370,15 +370,6 @@ public class PlayerListener implements Listener {
         ItemStack mainHand = event.getMainHandItem();
         if(playerData.getWStick() != null) {
             event.setCancelled(true);
-            /*if(playerData.getWStick().isCosmetic(mainHand)) {
-                if(!playerData.getWStick().isOverlaps()){
-                    event.setMainHandItem(new ItemStack(Material.AIR));
-                    return;
-                }
-                ItemStack itemStack = playerData.getWStick().leftItemAndGet();
-                if(itemStack == null) return;
-                event.setMainHandItem(itemStack);
-            }*/
         }
 
         if(playerData.getSpray() == null) return;
