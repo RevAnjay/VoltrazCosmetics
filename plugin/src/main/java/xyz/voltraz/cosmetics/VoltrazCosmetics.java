@@ -399,7 +399,7 @@ public final class VoltrazCosmetics extends JavaPlugin {
             var server = getServer();
             var getCommandMap = server.getClass().getMethod("getCommandMap");
             var commandMap = getCommandMap.invoke(server);
-            var cmd = new org.bukkit.command.Command("magicosmetics", "simple command.", "/<command>", java.util.List.of("cosmetics", "mcosmetics", "magiccos")) {
+            var cmd = new org.bukkit.command.Command("voltrazcosmetics", "simple command.", "/<command>", java.util.List.of("cosmetics", "vcosmetics", "magicosmetics", "mcosmetics", "magiccos")) {
                 @Override
                 public boolean execute(@org.jetbrains.annotations.NotNull org.bukkit.command.CommandSender sender, @org.jetbrains.annotations.NotNull String label, @org.jetbrains.annotations.NotNull String[] args) {
                     return new Command().onCommand(sender, this, label, args);
