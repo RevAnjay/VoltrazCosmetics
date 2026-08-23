@@ -21,20 +21,23 @@ public class DefaultAttributes {
         double knockBack = getKnockBackResistance(mat);
         double damage = getDefaultAttackDamage(mat);
         double speed = getDefaultAttackSpeed(mat);
+        org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("voltrazcosmetics", "default_modifier");
+        EquipmentSlot slot = guessEquipmentSlotOf(mat);
+        org.bukkit.inventory.EquipmentSlotGroup slotGroup = slot.getGroup();
         if (armor > 0) {
-            result.put(Attribute.ARMOR, new AttributeModifier(UUID.randomUUID(), Attribute.ARMOR.getKey().getKey(), armor, AttributeModifier.Operation.ADD_NUMBER, guessEquipmentSlotOf(mat)));
+            result.put(Attribute.ARMOR, new AttributeModifier(key, armor, AttributeModifier.Operation.ADD_NUMBER, slotGroup));
         }
         if(knockBack > 0){
-            result.put(Attribute.KNOCKBACK_RESISTANCE, new AttributeModifier(UUID.randomUUID(), Attribute.KNOCKBACK_RESISTANCE.getKey().getKey(), knockBack, AttributeModifier.Operation.ADD_NUMBER, guessEquipmentSlotOf(mat)));
+            result.put(Attribute.KNOCKBACK_RESISTANCE, new AttributeModifier(key, knockBack, AttributeModifier.Operation.ADD_NUMBER, slotGroup));
         }
         if (tough > 0) {
-            result.put(Attribute.ARMOR_TOUGHNESS, new AttributeModifier(UUID.randomUUID(), Attribute.ARMOR_TOUGHNESS.getKey().getKey(), tough, AttributeModifier.Operation.ADD_NUMBER, guessEquipmentSlotOf(mat)));
+            result.put(Attribute.ARMOR_TOUGHNESS, new AttributeModifier(key, tough, AttributeModifier.Operation.ADD_NUMBER, slotGroup));
         }
         if (damage > 0) {
-            result.put(Attribute.ATTACK_DAMAGE, new AttributeModifier(UUID.randomUUID(), Attribute.ATTACK_DAMAGE.getKey().getKey(), damage, AttributeModifier.Operation.ADD_NUMBER, guessEquipmentSlotOf(mat)));
+            result.put(Attribute.ATTACK_DAMAGE, new AttributeModifier(key, damage, AttributeModifier.Operation.ADD_NUMBER, slotGroup));
         }
         if (speed > 0) {
-            result.put(Attribute.ATTACK_SPEED, new AttributeModifier(UUID.randomUUID(), Attribute.ATTACK_SPEED.getKey().getKey(), speed, AttributeModifier.Operation.ADD_NUMBER, guessEquipmentSlotOf(mat)));
+            result.put(Attribute.ATTACK_SPEED, new AttributeModifier(key, speed, AttributeModifier.Operation.ADD_NUMBER, slotGroup));
         }
         return result;
     }

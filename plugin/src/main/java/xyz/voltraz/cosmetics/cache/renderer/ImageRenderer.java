@@ -2,6 +2,7 @@ package xyz.voltraz.cosmetics.cache.renderer;
 
 import xyz.voltraz.cosmetics.VoltrazCosmetics;
 import org.bukkit.entity.Player;
+import xyz.voltraz.cosmetics.utils.Utils;
 import org.bukkit.map.*;
 
 import javax.imageio.ImageIO;
@@ -11,7 +12,10 @@ import java.io.IOException;
 
 public class ImageRenderer extends MapRenderer {
 
+    private static final java.util.Map<BufferedImage, byte[]> PIXEL_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
     private BufferedImage image;
+    private byte[] cachedPixels;
     private boolean loaded;
 
     public ImageRenderer(){
@@ -24,36 +28,35 @@ public class ImageRenderer extends MapRenderer {
         this.loaded = false;
     }
 
+    public static void clearCache() {
+        PIXEL_CACHE.clear();
+    }
+
     public boolean load(BufferedImage image){
         if(image == null) return false;
         this.image = image;
+        this.cachedPixels = PIXEL_CACHE.computeIfAbsent(image, MapPalette::imageToBytes);
         return true;
     }
 
     public boolean load(String url){
-        BufferedImage image;
-        try {
-            if(url.startsWith("http")) {
-                image = ImageIO.read(java.net.URI.create(url).toURL());
-            }else{
-                File file = new File(VoltrazCosmetics.getInstance().getDataFolder(), "sprays/" + url);
-                VoltrazCosmetics.getInstance().getLogger().info("Loading spray from file: " + file.getAbsolutePath());
-                if(!file.exists()) return false;
-                image = ImageIO.read(file);
-            }
-            image = MapPalette.resizeImage(image);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        this.image = image;
-        return true;
+        BufferedImage image = Utils.getImage(url);
+        if(image == null) return false;
+        return load(image);
     }
 
     @Override
     public void render(MapView mapView, MapCanvas mapCanvas, Player player) {
         if(loaded) return;
-        mapCanvas.drawImage(0, 0, image);
+        if(cachedPixels != null) {
+            for (int x = 0; x < 128; ++x) {
+                for (int y = 0; y < 128; ++y) {
+                    mapCanvas.setPixel(x, y, cachedPixels[y * 128 + x]);
+                }
+            }
+        } else if(image != null) {
+            mapCanvas.drawImage(0, 0, image);
+        }
         mapView.setTrackingPosition(false);
         loaded = true;
     }

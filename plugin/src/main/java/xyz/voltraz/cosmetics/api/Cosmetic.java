@@ -309,7 +309,8 @@ public abstract class Cosmetic {
                     itemMeta.setDisplayName(name);
                     itemMeta.setLore(lore);
                     if(Utils.isNewerThan1206()) {
-                        itemMeta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier("foo",0,AttributeModifier.Operation.MULTIPLY_SCALAR_1)); // This is necessary as of 1.20.6
+                        org.bukkit.NamespacedKey attrKey = new org.bukkit.NamespacedKey("voltrazcosmetics", "dummy_damage");
+                        itemMeta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(attrKey, 0, AttributeModifier.Operation.ADD_NUMBER, org.bukkit.inventory.EquipmentSlotGroup.ANY));
                     }
 
                     if(glow){

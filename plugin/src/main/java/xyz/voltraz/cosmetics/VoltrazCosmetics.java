@@ -127,11 +127,11 @@ public final class VoltrazCosmetics extends JavaPlugin {
         }
         //checkIfProxy();
         if(version == null){
-            getLogger().severe(Utils.bsc("VmVyc2lvbjog") + Utils.getVersion() + Utils.bsc("IE5vdCBTdXBwb3J0ZWQh"));
+            getLogger().severe("Version: " + Utils.getVersion() + " Not Supported!");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        getLogger().info(Utils.bsc("VmVyc2lvbjog") + Utils.getVersion() + Utils.bsc("IERldGVjdGVkIQ=="));
+        getLogger().info("Version: " + Utils.getVersion() + " Detected!");
         this.bossBar = new ArrayList<>();
         this.config = new FileCreator(this, "config");
         this.messages = new FileCreator(this, "messages");
@@ -524,18 +524,6 @@ public final class VoltrazCosmetics extends JavaPlugin {
     }
 
     public boolean getCosmetic() {
-        MathUtils.floor(1.0f, 2.0f);
-        User user = getUser();
-        if(user == null) {
-            getLogger().warning("Your user does not exist, how strange isn't it...?");
-            getLogger().info("Development build detected, creating default user.");
-            setUser(new User());
-            return false;
-        }
-        getLogger().info(" ");
-        getLogger().info("Welcome " + user.getName() + "!");
-        getLogger().info("Thank you for using VoltrazCosmetics =)!");
-        getLogger().info(" ");
         return false;
     }
 

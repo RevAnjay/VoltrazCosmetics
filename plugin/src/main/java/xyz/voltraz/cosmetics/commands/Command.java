@@ -13,14 +13,25 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.*;
+import java.util.Collections;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Command implements CommandExecutor, TabCompleter {
+
     private final VoltrazCosmetics plugin = VoltrazCosmetics.getInstance();
 
-    @Override
+    public static boolean hasPerm(CommandSender sender, String perm) {
+        if (sender == null) return false;
+        if (sender.isOp()) return true;
+        return sender.hasPermission("voltrazcosmetics." + perm) 
+            || sender.hasPermission("cosmetics." + perm) 
+            || sender.hasPermission("magicosmetics." + perm)
+            || sender.hasPermission("voltrazcosmetics.admin")
+            || sender.hasPermission("cosmetics.admin")
+            || sender.hasPermission("magicosmetics.admin");
+    }
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command cmd, String label, String[] args) {
         FileCreator messages = plugin.getMessages();
         if(sender instanceof ConsoleCommandSender){
@@ -206,7 +217,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         player.addPassenger(entity);
                         return true;
                     case "unlock":
-                        if(!player.hasPermission("magicosmetics.admin")){
+                        if(!hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -219,7 +230,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         pData.setZone(false);
                         return true;
                     case "addall":
-                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                        if(!hasPerm(player, "cosmetics") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -240,7 +251,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "add":
                         //cosmetics add <player> <id>
-                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                        if(!hasPerm(player, "cosmetics") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -261,7 +272,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "remove":
                         //cosmetics remove <player> <id>
-                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                        if(!hasPerm(player, "cosmetics") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -277,7 +288,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         plugin.getCosmeticsManager().removeCosmetic(player, target, args[2].trim());
                         return true;
                     case "removeall":
-                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                        if(!hasPerm(player, "cosmetics") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -293,7 +304,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         plugin.getCosmeticsManager().removeAllCosmetics(player, target);
                         return true;
                     case "reload":
-                        if(!player.hasPermission("magicosmetics.reload")){
+                        if(!hasPerm(player, "reload") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -344,7 +355,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "open":
                         //cosmetics open <menu-id>
-                        if(!player.hasPermission("magicosmetics.menus")){
+                        if(!hasPerm(player, "menus") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -355,14 +366,14 @@ public class Command implements CommandExecutor, TabCompleter {
                         plugin.getCosmeticsManager().openMenu(player, args[1].trim());
                         return true;
                     case "spec":
-                        if(!player.hasPermission("magicosmetics.admin")){
+                        if(!hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
                         plugin.getVersion().setSpectator(player);
                         return true;
                     case "spawn":
-                        if(!player.hasPermission("magicosmetics.admin")){
+                        if(!hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -373,14 +384,14 @@ public class Command implements CommandExecutor, TabCompleter {
                         plugin.getVersion().removeNPC(player);
                         return true;
                     case "hide":
-                        if(!player.hasPermission("magicosmetics.hide")){
+                        if(!hasPerm(player, "hide") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
                         plugin.getCosmeticsManager().hideSelfCosmetic(player, CosmeticType.BAG);
                         return true;
                     case "toggle":
-                        if(!player.hasPermission("magicosmetics.toggle")){
+                        if(!hasPerm(player, "toggle") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -389,7 +400,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "zones":
                         //cosmetics zones add <name>
-                        if(!player.hasPermission("magicosmetics.zones")){
+                        if(!hasPerm(player, "zones") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -512,7 +523,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "token":
                         //cosmetics token give <player> <name>
-                        if(!player.hasPermission("magicosmetics.tokens")){
+                        if(!hasPerm(player, "tokens") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -531,14 +542,14 @@ public class Command implements CommandExecutor, TabCompleter {
                         }
                         return true;
                     case "check":
-                        if(!player.hasPermission("cosmetics.admin")){
+                        if(!hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
                         plugin.getCosmeticsManager().sendCheck(player);
                         return true;
                     case "npc":
-                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                        if(!hasPerm(player, "cosmetics") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -562,7 +573,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "tint":
                         //cosmetics tint <color>
-                        if(!player.hasPermission("magicosmetics.tint")){
+                        if(!hasPerm(player, "tint") && !hasPerm(player, "admin")){
                             Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
                             return true;
                         }
@@ -576,7 +587,7 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                 }
             }
-            if(player.hasPermission("magicosmetics.cosmetics.use")) {
+            if(hasPerm(player, "cosmetics.use") || hasPerm(player, "use") || hasPerm(player, "admin")) {
                 plugin.getCosmeticsManager().openMenu(player, plugin.getMainMenu());
                 if(plugin.getOnExecuteCosmetics().isEmpty()) return true;
                 player.performCommand(plugin.getOnExecuteCosmetics());
@@ -589,40 +600,42 @@ public class Command implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, org.bukkit.command.Command cmd, String label, String[] args) {
         List<String> arguments = new ArrayList<>();
-        if(sender.hasPermission("magicosmetics.cosmetics")) {
+        if(hasPerm(sender, "cosmetics") || hasPerm(sender, "admin")) {
             arguments.add("add");
             arguments.add("remove");
             arguments.add("addAll");
+            arguments.add("removeAll");
             if(plugin.isCitizens()) {
                 arguments.add("npc");
             }
         }
-        if(sender.hasPermission("magicosmetics.menus")) {
+        if(hasPerm(sender, "menus") || hasPerm(sender, "admin")) {
             arguments.add("open");
         }
-        if(sender.hasPermission("magicosmetics.zones")) {
+        if(hasPerm(sender, "zones") || hasPerm(sender, "admin")) {
             arguments.add("zones");
         }
-        if(sender.hasPermission("magicosmetics.tokens")) {
+        if(hasPerm(sender, "tokens") || hasPerm(sender, "admin")) {
             arguments.add("token");
         }
-        if(sender.hasPermission("magicosmetics.reload")) {
+        if(hasPerm(sender, "reload") || hasPerm(sender, "admin")) {
             arguments.add("reload");
         }
-        if(sender.hasPermission("magicosmetics.hide")) {
+        if(hasPerm(sender, "hide") || hasPerm(sender, "admin")) {
             arguments.add("hide");
         }
-        if(sender.hasPermission("magicosmetics.toggle")){
+        if(hasPerm(sender, "toggle") || hasPerm(sender, "admin")){
             arguments.add("toggle");
         }
-        if(sender.hasPermission("magicosmetics.equip")){
+        if(hasPerm(sender, "equip") || hasPerm(sender, "use") || hasPerm(sender, "admin")){
             arguments.add("use");
+            arguments.add("equip");
             arguments.add("unequip");
         }
-        if(sender.hasPermission("magicosmetics.tint")){
+        if(hasPerm(sender, "tint") || hasPerm(sender, "admin")){
             arguments.add("tint");
         }
-        if(arguments.size() == 0) return arguments;
+        if(arguments.isEmpty()) return Collections.emptyList();
         List<String> result = new ArrayList<>();
         switch (args.length){
             case 1:
@@ -638,24 +651,31 @@ public class Command implements CommandExecutor, TabCompleter {
                     case "add":
                     case "addall":
                     case "remove":
-                        return null;
+                    case "removeall":
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            if (p.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
+                                result.add(p.getName());
+                            }
+                        }
+                        return result;
                     case "npc":
-                        if(!plugin.isCitizens()) return null;
+                        if(!plugin.isCitizens()) return Collections.emptyList();
                         result.add("save");
                         result.addAll(plugin.getCitizens().getNPCs());
-                        return result;
+                        break;
                     case "unequip":
                     case "use":
-                        if(!sender.hasPermission("magicosmetics.equip")) return null;
+                    case "equip":
+                        if(!hasPerm(sender, "equip") && !hasPerm(sender, "use") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.add("all");
                         result.addAll(Cosmetic.cosmetics.keySet());
-                        return result;
+                        break;
                     case "open":
-                        if(!sender.hasPermission("magicosmetics.menus")) return null;
+                        if(!hasPerm(sender, "menus") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.addAll(Menu.inventories.keySet());
-                        return result;
+                        break;
                     case "zones":
-                        if(!sender.hasPermission("magicosmetics.zones")) return null;
+                        if(!hasPerm(sender, "zones") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.add("add");
                         result.add("remove");
                         result.add("setNPC");
@@ -667,53 +687,80 @@ public class Command implements CommandExecutor, TabCompleter {
                         result.add("enable");
                         result.add("disable");
                         result.add("save");
-                        return result;
+                        break;
                     case "token":
-                        if(!sender.hasPermission("magicosmetics.tokens")) return null;
+                        if(!hasPerm(sender, "tokens") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.add("give");
-                        return result;
+                        break;
                     case "tint":
-                        if(!sender.hasPermission("magicosmetics.tint")) return null;
+                        if(!hasPerm(sender, "tint") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.add("#FFFFFF");
-                        return result;
+                        result.add("#FF0000");
+                        result.add("#00FF00");
+                        result.add("#0000FF");
+                        result.add("#FFFF00");
+                        break;
                 }
+                List<String> filtered2 = new ArrayList<>();
+                for(String s : result){
+                    if(s.toLowerCase().startsWith(args[1].toLowerCase())) filtered2.add(s);
+                }
+                return filtered2;
             case 3:
                 switch (args[0].toLowerCase()){
                     case "add":
                     case "remove":
-                    case "npc":
-                        if(!sender.hasPermission("magicosmetics.cosmetics")) return null;
+                        if(!hasPerm(sender, "cosmetics") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.addAll(Cosmetic.cosmetics.keySet());
-                        return result;
+                        break;
+                    case "npc":
+                        if(!hasPerm(sender, "cosmetics") && !hasPerm(sender, "admin")) return Collections.emptyList();
+                        result.addAll(Cosmetic.cosmetics.keySet());
+                        break;
                     case "use":
                     case "equip":
-                        if(!sender.hasPermission("magicosmetics.equip")) return null;
+                        if(!hasPerm(sender, "equip") && !hasPerm(sender, "use") && !hasPerm(sender, "admin")) return Collections.emptyList();
                         result.add("#FFFFFF");
                         result.add("null");
-                        return result;
+                        break;
                     case "zones":
-                        if(!sender.hasPermission("magicosmetics.zones")) return null;
-                        if(args[1].equalsIgnoreCase("add")) return new ArrayList<>();
-                        result.addAll(Zone.zones.keySet());
-                        return result;
+                        if(!hasPerm(sender, "zones") && !hasPerm(sender, "admin")) return Collections.emptyList();
+                        if(!args[1].equalsIgnoreCase("add")) {
+                            result.addAll(Zone.zones.keySet());
+                        }
+                        break;
                     case "token":
-                        return null;
+                        if(args[1].equalsIgnoreCase("give")){
+                            for (Player p : Bukkit.getOnlinePlayers()) {
+                                if (p.getName().toLowerCase().startsWith(args[2].toLowerCase())) {
+                                    result.add(p.getName());
+                                }
+                            }
+                            return result;
+                        }
+                        break;
                 }
+                List<String> filtered3 = new ArrayList<>();
+                for(String s : result){
+                    if(s.toLowerCase().startsWith(args[2].toLowerCase())) filtered3.add(s);
+                }
+                return filtered3;
             case 4:
                 if(args[0].equalsIgnoreCase("token") && args[1].equalsIgnoreCase("give")){
-                    if(!sender.hasPermission("magicosmetics.tokens")) return null;
-                    result.addAll(Token.tokens.keySet());
+                    if(!hasPerm(sender, "tokens") && !hasPerm(sender, "admin")) return Collections.emptyList();
+                    for(String t : Token.tokens.keySet()){
+                        if(t.toLowerCase().startsWith(args[3].toLowerCase())) result.add(t);
+                    }
                     return result;
                 }
                 if(args[0].equalsIgnoreCase("npc")){
-                    if(!plugin.isCitizens()) return null;
-                    if(!sender.hasPermission("magicosmetics.cosmetics")) return null;
+                    if(!plugin.isCitizens()) return Collections.emptyList();
+                    if(!hasPerm(sender, "cosmetics") && !hasPerm(sender, "admin")) return Collections.emptyList();
                     result.add("#FFFFFF");
                     return result;
                 }
-
+                break;
         }
-
-        return null;
+        return Collections.emptyList();
     }
 }

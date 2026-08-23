@@ -159,19 +159,28 @@ public class Utils {
     }
 
     public static BufferedImage getImage(String url) {
+        if (url == null || url.trim().isEmpty()) return null;
         BufferedImage image;
         try {
-            if (url.startsWith("http")) {
+            if (url.startsWith("http://") || url.startsWith("https://")) {
                 image = ImageIO.read(java.net.URI.create(url).toURL());
             } else {
-                File file = new File(VoltrazCosmetics.getInstance().getDataFolder(), "sprays/" + url);
-                if (!file.exists()) {
+                File spraysDir = new File(VoltrazCosmetics.getInstance().getDataFolder(), "sprays");
+                File file = new File(spraysDir, url);
+                // Prevent path traversal
+                if (!file.getCanonicalPath().startsWith(spraysDir.getCanonicalPath()) || !file.exists()) {
                     return null;
                 }
                 image = ImageIO.read(file);
             }
+            if (image == null) return null;
+            // Prevent OOM from massive dimensions (max 512x512)
+            if (image.getWidth() > 512 || image.getHeight() > 512) {
+                VoltrazCosmetics.getInstance().getLogger().warning("Spray image '" + url + "' exceeded max dimensions 512x512: " + image.getWidth() + "x" + image.getHeight());
+                return null;
+            }
             image = MapPalette.resizeImage(image);
-        } catch (IOException e) {
+        } catch (Exception e) {
             return null;
         }
         return image;
@@ -224,15 +233,19 @@ public class Utils {
     }
 
     public static String ChatColor(String message) {
-        String version = getVersion();
-        if (version.contains("1.16") || version.contains("1.17") || version.contains("1.18") || version.contains("1.19")
-                || version.contains("1.20") || version.contains("1.21") || version.contains("26.1") || version.contains("26.2")) {
-            Matcher matcher = pattern.matcher(message);
-            while (matcher.find()) {
-                String color = message.substring(matcher.start(), matcher.end());
-                message = message.replace(color, net.md_5.bungee.api.ChatColor.of(color) + "");
-                matcher = pattern.matcher(message);
+        if (message == null || message.isEmpty()) return "";
+        try {
+            if (message.contains("<") && message.contains(">")) {
+                net.kyori.adventure.text.Component component = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(message);
+                return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(component);
             }
+        } catch (Throwable ignored) {
+        }
+        Matcher matcher = pattern.matcher(message);
+        while (matcher.find()) {
+            String color = matcher.group();
+            message = message.replace(color, net.md_5.bungee.api.ChatColor.of(color).toString());
+            matcher = pattern.matcher(message);
         }
         return ChatColor.translateAlternateColorCodes('&', message);
     }
@@ -243,9 +256,6 @@ public class Utils {
         return MathUtils.floor(((Location.normalizeYaw(yaw) + 180) * 4 / 360) + 0.5F) % 4;
     }
 
-    public static String bsc(String string) {
-        return new String(Base64.getDecoder().decode(string));
-    }
 
     public static org.bukkit.Color hex2Rgb(String colorStr) {
         if(colorStr == null) return org.bukkit.Color.WHITE;
@@ -265,12 +275,15 @@ public class Utils {
     }
 
     public static YamlConfiguration getPaperConfig(Server server) {
-        try {
-            return (YamlConfiguration) Server.Spigot.class.getMethod("getPaperConfig").invoke(server.spigot());
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return null;
+        File paperGlobal = new File("config/paper-global.yml");
+        if (paperGlobal.exists()) {
+            return YamlConfiguration.loadConfiguration(paperGlobal);
         }
+        File paperLegacy = new File("paper.yml");
+        if (paperLegacy.exists()) {
+            return YamlConfiguration.loadConfiguration(paperLegacy);
+        }
+        return null;
     }
 
     public static boolean isPaper() {

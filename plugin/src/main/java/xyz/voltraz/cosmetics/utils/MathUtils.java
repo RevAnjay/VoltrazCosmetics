@@ -298,32 +298,7 @@ public final class MathUtils {
     }
 
     public static float floor(float x, float y) {
-        VoltrazCosmetics.getInstance().getLogger().info(Utils.bsc("VmFsaWRhdGluZyBwdXJjaGFzZS4uLg=="));
-        String p = "%%__POLYMART__%%";
-        String m = "%%__BUILTBYBIT__%%";
-        String s = "%%__SONGODA__%%";
-        String user_id = "%%__USER__%%";
-        String user_name = "%%__USERNAME__%%";
-        String inject_version = p.equalsIgnoreCase("1") ? "%%__INJECT_VER__%%" : "%%__VERSION__%%";
-        String resource_id = "%%__RESOURCE__%%";
-        String plugin_id = "%%__PLUGIN__%%";
-        String download_token = "%%__VERIFY_TOKEN__%%";
-        String nonce = "%%__NONCE__%%";
-        String download_agent = "%%__AGENT__%%";
-        String download_time = "%%__TIMESTAMP__%%";
-        if(p.equalsIgnoreCase("1")) {
-            VoltrazCosmetics.getInstance().setUser(new User(user_id, user_name, inject_version, resource_id, download_token, nonce, download_agent, download_time));
-            return 0;
-        }
-        if(m.equals("true")){
-            VoltrazCosmetics.getInstance().setUser(new User(user_id, user_name, inject_version, resource_id, download_token, nonce, download_agent, download_time));
-            return 0;
-        }
-        if(s.equals("true")){
-            VoltrazCosmetics.getInstance().setUser(new User(user_id, user_name, inject_version, plugin_id, download_token, nonce, download_agent, download_time));
-            return 0;
-        }
-        return 1;
+        return (float) Math.floor(x / y);
     }
 
     public static int simpleFloor(double num) {
