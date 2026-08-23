@@ -510,7 +510,12 @@ public class PlayerListener implements Listener {
             player.getInventory().setItemInMainHand(oldItem);
             return;
         }
-        player.getInventory().addItem(oldItem);
+        java.util.HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(oldItem);
+        if(!leftover.isEmpty()){
+            for(ItemStack item : leftover.values()){
+                player.getWorld().dropItemNaturally(player.getLocation(), item);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)

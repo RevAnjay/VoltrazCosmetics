@@ -717,7 +717,12 @@ public class CosmeticsManager {
         if(playerData.isZone()) {
             playerData.getInventory().put(freeSlot, token.getItemStack().clone());
         }else{
-            player.getInventory().addItem(token.getItemStack().clone());
+            java.util.HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(token.getItemStack().clone());
+            if(!leftover.isEmpty()){
+                for(ItemStack item : leftover.values()){
+                    player.getWorld().dropItemNaturally(player.getLocation(), item);
+                }
+            }
         }
         for(String msg : plugin.getMessages().getStringList("change-cosmetic-to-token")){
             sendMessage(player, msg);

@@ -1175,8 +1175,14 @@ public class PlayerData {
             }
         }
         ItemStack savedItem = hat.leftItemAndGet();
-        if(savedItem != null)
-            player.getInventory().addItem(savedItem);
+        if(savedItem != null) {
+            java.util.HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(savedItem);
+            if(!leftover.isEmpty()){
+                for(ItemStack item : leftover.values()){
+                    player.getWorld().dropItemNaturally(player.getLocation(), item);
+                }
+            }
+        }
         return true;
     }
 
@@ -1203,8 +1209,14 @@ public class PlayerData {
             }
         }
         ItemStack savedItem = wStick.leftItemAndGet();
-        if(savedItem != null)
-            player.getInventory().addItem(savedItem);
+        if(savedItem != null) {
+            java.util.HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(savedItem);
+            if(!leftover.isEmpty()){
+                for(ItemStack item : leftover.values()){
+                    player.getWorld().dropItemNaturally(player.getLocation(), item);
+                }
+            }
+        }
         return true;
     }
 
