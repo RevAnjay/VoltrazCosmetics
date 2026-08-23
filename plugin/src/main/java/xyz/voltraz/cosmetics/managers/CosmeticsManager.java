@@ -26,20 +26,24 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import xyz.voltraz.cosmetics.utils.FoliaUtil;
+import xyz.voltraz.cosmetics.utils.Utils;
 
 import java.util.*;
 
-import static xyz.voltraz.cosmetics.utils.Utils.sendMessage;
-
 public class CosmeticsManager {
-    private final VoltrazCosmetics plugin = VoltrazCosmetics.getInstance();
-    private Object otherCosmetics;
+
+    private final VoltrazCosmetics plugin;
     private Object balloons;
+    private Object otherCosmetics;
     private Object npcTask;
-    int i = 0;
+    private Object autoSaveTask;
 
     public CosmeticsManager() {
+        this.plugin = VoltrazCosmetics.getInstance();
         loadNewMessages();
+    }
+    public void sendMessage(CommandSender sender, String message) {
+        Utils.sendMessage(sender, message);
     }
 
     public void loadNewMessages() {
@@ -147,6 +151,7 @@ public class CosmeticsManager {
             }, 0L, 4L);
         }
         if(npcTask == null && !NPC.npcs.isEmpty()) {
+            final int[] npcAngle = {0};
             npcTask = FoliaUtil.runTaskTimer(plugin, () -> {
                 if(NPC.npcs.isEmpty()) {
                     FoliaUtil.cancel(npcTask);
@@ -156,10 +161,22 @@ public class CosmeticsManager {
                 for(Player player : Bukkit.getOnlinePlayers()){
                     NPC npc = plugin.getVersion().getNPC(player);
                     if(npc == null) continue;
-                    npc.lookNPC(player, i);
+                    npc.lookNPC(player, npcAngle[0]);
                 }
-                i = i+10;
+                npcAngle[0] = npcAngle[0] + 10;
             }, plugin.getConfig().getLong("npc-rotation"), plugin.getConfig().getLong("npc-rotation"));
+        }
+        if(autoSaveTask == null) {
+            // Auto-save dirty player data asynchronously every 5 minutes (6000 ticks)
+            autoSaveTask = FoliaUtil.runTaskTimerAsync(plugin, () -> {
+                if (plugin.getSql() == null) return;
+                for (PlayerData playerData : PlayerData.players.values()) {
+                    if (playerData != null && playerData.isDirty() && playerData.getOfflinePlayer() != null) {
+                        playerData.setDirty(false);
+                        plugin.getSql().savePlayerAsync(playerData);
+                    }
+                }
+            }, 6000L, 6000L);
         }
     }
 
@@ -206,6 +223,10 @@ public class CosmeticsManager {
             EntityBalloon.entitiesBalloon.values().forEach(balloon -> {
                 try { balloon.remove(); } catch (Exception ignored) {}
             });
+            if(autoSaveTask != null) {
+                FoliaUtil.cancel(autoSaveTask);
+                autoSaveTask = null;
+            }
         } catch (Exception ignored) {} finally {
             EntityBalloon.entitiesBalloon.clear();
         }

@@ -57,7 +57,15 @@ public class PlayerData {
     private final IRangeManager rangeManager;
     private ItemStack deathBackupHelmet;
     private ItemStack deathBackupWStick;
+    private volatile boolean dirty = false;
 
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
+    }
     public PlayerData(UUID uniqueId, String name, IRangeManager rangeManager){
         this.uniqueId = uniqueId;
         this.name = name;

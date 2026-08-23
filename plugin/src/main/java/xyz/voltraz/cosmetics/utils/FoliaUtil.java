@@ -15,6 +15,13 @@ public final class FoliaUtil {
             return Bukkit.getScheduler().runTaskTimer(plugin, task, delay, period);
         }
     }
+    public static Object runTaskTimerAsync(Plugin plugin, Runnable task, long delay, long period) {
+        if (isFolia()) {
+            return Bukkit.getAsyncScheduler().runAtFixedRate(plugin, st -> task.run(), Math.max(delay * 50, 1), Math.max(period * 50, 1), java.util.concurrent.TimeUnit.MILLISECONDS);
+        } else {
+            return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, task, delay, period);
+        }
+    }
 
     public static Object runTaskLaterAsynchronously(Plugin plugin, Runnable task, long delay) {
         if (isFolia()) {

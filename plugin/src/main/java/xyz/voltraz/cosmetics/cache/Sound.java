@@ -37,11 +37,17 @@ public class Sound {
             float pitch = 0.5f;
             if(soundsConfig.contains("sounds." + key + ".type")) {
                 String sound = soundsConfig.getString("sounds." + key + ".type");
-                try{
-                    soundBukkit = org.bukkit.Sound.valueOf(sound.toUpperCase());
-                }catch (IllegalArgumentException exception){
-                    VoltrazCosmetics.getInstance().getLogger().info("Sound '" + sound + "' not Found in Bukkit... Transform custom");
-                    soundCustom = sound;
+                try {
+                    org.bukkit.NamespacedKey keySound = org.bukkit.NamespacedKey.minecraft(sound.toLowerCase().replace(".", "_"));
+                    soundBukkit = org.bukkit.Registry.SOUNDS.get(keySound);
+                } catch (Throwable ignored) {
+                }
+                if (soundBukkit == null) {
+                    try {
+                        soundBukkit = org.bukkit.Sound.valueOf(sound.toUpperCase());
+                    } catch (Throwable ignored) {
+                        soundCustom = sound;
+                    }
                 }
             }
             if(soundsConfig.contains("sounds." + key + ".yaw")) {

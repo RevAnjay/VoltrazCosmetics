@@ -32,6 +32,30 @@ public class Command implements CommandExecutor, TabCompleter {
             || sender.hasPermission("cosmetics.admin")
             || sender.hasPermission("magicosmetics.admin");
     }
+
+    public static void sendHelp(CommandSender sender) {
+        Utils.sendMessage(sender, "&8&m----------------------------------------");
+        Utils.sendMessage(sender, "&6&lVoltrazCosmetics &7- &eCommand Help");
+        Utils.sendMessage(sender, "&e/cosmetics &7- Open cosmetics wardrobe menu");
+        Utils.sendMessage(sender, "&e/cosmetics use <id> &7- Equip a cosmetic");
+        Utils.sendMessage(sender, "&e/cosmetics unequip [type] &7- Unequip cosmetics");
+        Utils.sendMessage(sender, "&e/cosmetics tint <#hex> &7- Dye your equipped cosmetic");
+        Utils.sendMessage(sender, "&e/cosmetics hide &7- Toggle cosmetic visibility");
+        if (hasPerm(sender, "cosmetics") || hasPerm(sender, "admin")) {
+            Utils.sendMessage(sender, "&6/cosmetics add <player> <id> &7- Give cosmetic to player");
+            Utils.sendMessage(sender, "&6/cosmetics remove <player> <id> &7- Take cosmetic from player");
+            Utils.sendMessage(sender, "&6/cosmetics addAll <player> &7- Unlock all cosmetics for player");
+            Utils.sendMessage(sender, "&6/cosmetics removeAll <player> &7- Lock all cosmetics for player");
+        }
+        if (hasPerm(sender, "tokens") || hasPerm(sender, "admin")) {
+            Utils.sendMessage(sender, "&6/cosmetics token give <player> <token> &7- Give cosmetic token");
+        }
+        if (hasPerm(sender, "reload") || hasPerm(sender, "admin")) {
+            Utils.sendMessage(sender, "&6/cosmetics reload &7- Reload all configuration files");
+        }
+        Utils.sendMessage(sender, "&8&m----------------------------------------");
+    }
+
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command cmd, String label, String[] args) {
         FileCreator messages = plugin.getMessages();
         if(sender instanceof ConsoleCommandSender){
@@ -212,6 +236,9 @@ public class Command implements CommandExecutor, TabCompleter {
             Player target;
             if(args.length >= 1){
                 switch (args[0].toLowerCase()){
+                    case "help":
+                        sendHelp(sender);
+                        return true;
                     case "test":
                         Entity entity = player.getWorld().spawnEntity(player.getLocation(), EntityType.ARMOR_STAND);
                         player.addPassenger(entity);
@@ -635,6 +662,7 @@ public class Command implements CommandExecutor, TabCompleter {
         if(hasPerm(sender, "tint") || hasPerm(sender, "admin")){
             arguments.add("tint");
         }
+        arguments.add("help");
         if(arguments.isEmpty()) return Collections.emptyList();
         List<String> result = new ArrayList<>();
         switch (args.length){
