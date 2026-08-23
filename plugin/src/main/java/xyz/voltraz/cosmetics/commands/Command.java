@@ -37,12 +37,15 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
+                        if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                            Utils.sendMessage(sender,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                            return true;
+                        }
                         plugin.getCosmeticsManager().addAllCosmetics(sender, target);
                         return true;
                     case "add":
                         //cosmetics add <player> <id>
                         if(args.length < 3){
-
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("commands.add-usage"));
                             return true;
                         }
@@ -51,10 +54,14 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().addCosmetic(sender, target, args[2]);
+                        if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                            Utils.sendMessage(sender,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                            return true;
+                        }
+                        plugin.getCosmeticsManager().addCosmetic(sender, target, args[2].trim());
                         return true;
                     case "remove":
-                        //cosmetics add <player> <id>
+                        //cosmetics remove <player> <id>
                         if(args.length < 3){
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("commands.remove-usage"));
                             return true;
@@ -64,7 +71,7 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().removeCosmetic(sender, target, args[2]);
+                        plugin.getCosmeticsManager().removeCosmetic(sender, target, args[2].trim());
                         return true;
                     case "removeall":
                         if(args.length < 2){
@@ -104,18 +111,26 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
+                        if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                            Utils.sendMessage(sender,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                            return true;
+                        }
+                        String cosmeticId = args[2].trim();
                         if(args.length == 4) {
-                            if(!args[3].startsWith("#")) {
-                                plugin.getCosmeticsManager().equipCosmetic(target, args[2], null, false);
+                            String colorArg = args[3].trim();
+                            if(!colorArg.startsWith("#")) {
+                                plugin.getCosmeticsManager().equipCosmetic(target, cosmeticId, null, false);
+                            } else {
+                                plugin.getCosmeticsManager().equipCosmetic(target, cosmeticId, colorArg, false);
                             }
-                            plugin.getCosmeticsManager().equipCosmetic(target, args[2], args[3], false);
                             return true;
                         }
                         if(args.length == 5) {
-                            plugin.getCosmeticsManager().equipCosmetic(target, args[2], args[3], Boolean.parseBoolean(args[4]));
+                            String colorArg = args[3].trim();
+                            plugin.getCosmeticsManager().equipCosmetic(target, cosmeticId, colorArg.startsWith("#") ? colorArg : null, Boolean.parseBoolean(args[4].trim()));
                             return true;
                         }
-                        plugin.getCosmeticsManager().equipCosmetic(target, args[2], null, false);
+                        plugin.getCosmeticsManager().equipCosmetic(target, cosmeticId, null, false);
                         return true;
                     case "unequip":
                         // /cosmetics unequip <player> <id>
@@ -144,7 +159,11 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(sender,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().openMenu(target, args[1]);
+                        if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                            Utils.sendMessage(sender,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                            return true;
+                        }
+                        plugin.getCosmeticsManager().openMenu(target, args[1].trim());
                         return true;
                     case "token":
                         //cosmetics token give <player> <name>
@@ -158,7 +177,11 @@ public class Command implements CommandExecutor, TabCompleter {
                                 Utils.sendMessage(sender,plugin.prefix + messages.getString("offline-player"));
                                 return true;
                             }
-                            plugin.getCosmeticsManager().giveToken(sender, target, args[3]);
+                            if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                                Utils.sendMessage(sender,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                                return true;
+                            }
+                            plugin.getCosmeticsManager().giveToken(sender, target, args[3].trim());
                             return true;
                         }
                         return true;
@@ -183,15 +206,23 @@ public class Command implements CommandExecutor, TabCompleter {
                         player.addPassenger(entity);
                         return true;
                     case "unlock":
+                        if(!player.hasPermission("magicosmetics.admin")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 2){
                             return true;
                         }
                         Player p = Bukkit.getPlayer(args[1]);
                         if(p == null) return true;
-                        PlayerData playerData = PlayerData.getPlayer(p);
-                        playerData.setZone(false);
+                        PlayerData pData = PlayerData.getPlayer(p);
+                        pData.setZone(false);
                         return true;
                     case "addall":
+                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 2){
                             Utils.sendMessage(player,plugin.prefix + messages.getString("commands.add-all-usage"));
                             return true;
@@ -201,12 +232,19 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(player,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
+                        if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                            Utils.sendMessage(player,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                            return true;
+                        }
                         plugin.getCosmeticsManager().addAllCosmetics(player, target);
                         return true;
                     case "add":
                         //cosmetics add <player> <id>
+                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 3){
-
                             Utils.sendMessage(player,plugin.prefix + messages.getString("commands.add-usage"));
                             return true;
                         }
@@ -215,10 +253,18 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(player,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().addCosmetic(player, target, args[2]);
+                        if(plugin.getWorldsBlacklist().contains(target.getWorld().getName())) {
+                            Utils.sendMessage(player,plugin.prefix + plugin.getMessages().getString("world-blacklist"));
+                            return true;
+                        }
+                        plugin.getCosmeticsManager().addCosmetic(player, target, args[2].trim());
                         return true;
                     case "remove":
-                        //cosmetics add <player> <id>
+                        //cosmetics remove <player> <id>
+                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 3){
                             Utils.sendMessage(player,plugin.prefix + messages.getString("commands.remove-usage"));
                             return true;
@@ -228,9 +274,13 @@ public class Command implements CommandExecutor, TabCompleter {
                             Utils.sendMessage(player,plugin.prefix + messages.getString("offline-player"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().removeCosmetic(player, target, args[2]);
+                        plugin.getCosmeticsManager().removeCosmetic(player, target, args[2].trim());
                         return true;
                     case "removeall":
+                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 2){
                             Utils.sendMessage(player,plugin.prefix + messages.getString("commands.remove-all-usage"));
                             return true;
@@ -243,6 +293,10 @@ public class Command implements CommandExecutor, TabCompleter {
                         plugin.getCosmeticsManager().removeAllCosmetics(player, target);
                         return true;
                     case "reload":
+                        if(!player.hasPermission("magicosmetics.reload")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         plugin.getCosmeticsManager().reload(sender);
                         return true;
                     case "use":
@@ -290,16 +344,28 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "open":
                         //cosmetics open <menu-id>
+                        if(!player.hasPermission("magicosmetics.menus")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 2){
                             Utils.sendMessage(player,plugin.prefix + messages.getString("commands.menu-usage"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().openMenu(player, args[1]);
+                        plugin.getCosmeticsManager().openMenu(player, args[1].trim());
                         return true;
                     case "spec":
+                        if(!player.hasPermission("magicosmetics.admin")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         plugin.getVersion().setSpectator(player);
                         return true;
                     case "spawn":
+                        if(!player.hasPermission("magicosmetics.admin")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(plugin.getVersion().getNPC(player) == null){
                             plugin.getVersion().createNPC(player);
                             return true;
@@ -307,14 +373,26 @@ public class Command implements CommandExecutor, TabCompleter {
                         plugin.getVersion().removeNPC(player);
                         return true;
                     case "hide":
+                        if(!player.hasPermission("magicosmetics.hide")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         plugin.getCosmeticsManager().hideSelfCosmetic(player, CosmeticType.BAG);
                         return true;
                     case "toggle":
-                        playerData = PlayerData.getPlayer(player);
+                        if(!player.hasPermission("magicosmetics.toggle")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
+                        PlayerData playerData = PlayerData.getPlayer(player);
                         playerData.toggleHiddeCosmetics();
                         return true;
                     case "zones":
                         //cosmetics zones add <name>
+                        if(!player.hasPermission("magicosmetics.zones")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 2){
                             for(String msg : plugin.getMessages().getStringList("commands.zones-usage")){
                                 Utils.sendMessage(player,msg);
@@ -434,6 +512,10 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "token":
                         //cosmetics token give <player> <name>
+                        if(!player.hasPermission("magicosmetics.tokens")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 4){
                             Utils.sendMessage(player,plugin.prefix + plugin.getMessages().getString("commands.token-usage"));
                             return true;
@@ -449,14 +531,21 @@ public class Command implements CommandExecutor, TabCompleter {
                         }
                         return true;
                     case "check":
+                        if(!player.hasPermission("cosmetics.admin")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         plugin.getCosmeticsManager().sendCheck(player);
                         return true;
                     case "npc":
+                        if(!player.hasPermission("magicosmetics.cosmetics")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(!plugin.isCitizens()){
                             Utils.sendMessage(player, plugin.prefix + "&cCitizens is not installed!");
                             return true;
                         }
-                        //cosmetics npc 1 <cosmetic-id> <color>
                         if(args.length == 2 && args[1].equalsIgnoreCase("save")){
                             plugin.getNPCsLoader().save();
                             return true;
@@ -473,11 +562,14 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                     case "tint":
                         //cosmetics tint <color>
+                        if(!player.hasPermission("magicosmetics.tint")){
+                            Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
+                            return true;
+                        }
                         if(args.length < 2){
                             Utils.sendMessage(player,plugin.prefix + plugin.getMessages().getString("commands.tint-usage"));
                             return true;
                         }
-                        plugin.getCosmeticsManager().tintItem(player, args[1]);
                         return true;
                     default:
                         Utils.sendMessage(player,plugin.prefix + plugin.getMessages().getString("commands.not-found"));

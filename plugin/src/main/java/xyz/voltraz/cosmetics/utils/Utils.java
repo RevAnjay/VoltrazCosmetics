@@ -247,10 +247,20 @@ public class Utils {
     }
 
     public static org.bukkit.Color hex2Rgb(String colorStr) {
-        return org.bukkit.Color.fromRGB(
-                Integer.valueOf(colorStr.substring(1, 3), 16),
-                Integer.valueOf(colorStr.substring(3, 5), 16),
-                Integer.valueOf(colorStr.substring(5, 7), 16));
+        if(colorStr == null) return org.bukkit.Color.WHITE;
+        colorStr = colorStr.trim();
+        if(!colorStr.startsWith("#")) colorStr = "#" + colorStr;
+        if(!colorStr.matches("^#[0-9a-fA-F]{6}$")) {
+            return org.bukkit.Color.WHITE;
+        }
+        try {
+            return org.bukkit.Color.fromRGB(
+                    Integer.parseInt(colorStr.substring(1, 3), 16),
+                    Integer.parseInt(colorStr.substring(3, 5), 16),
+                    Integer.parseInt(colorStr.substring(5, 7), 16));
+        } catch (Exception e) {
+            return org.bukkit.Color.WHITE;
+        }
     }
 
     public static YamlConfiguration getPaperConfig(Server server) {

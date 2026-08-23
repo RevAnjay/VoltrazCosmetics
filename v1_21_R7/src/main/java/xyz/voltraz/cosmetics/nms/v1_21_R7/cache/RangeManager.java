@@ -30,7 +30,10 @@ public class RangeManager implements IRangeManager {
     public Set<Player> getPlayerInRange() {
         Set<Player> list = new HashSet<>();
         if(tracked == null) return list;
-        tracked.seenBy.forEach(c -> list.add(c.getPlayer().getBukkitEntity()));
+        tracked.seenBy.forEach(c -> {
+            org.bukkit.entity.Player p = org.bukkit.Bukkit.getPlayer(c.getPlayer().getUUID());
+            if (p != null) list.add(p);
+        });
         return list;
     }
 }

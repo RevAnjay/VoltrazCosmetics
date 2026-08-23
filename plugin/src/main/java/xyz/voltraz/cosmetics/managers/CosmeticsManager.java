@@ -35,7 +35,6 @@ public class CosmeticsManager {
     private final VoltrazCosmetics plugin = VoltrazCosmetics.getInstance();
     private Object otherCosmetics;
     private Object balloons;
-    // private BukkitTask saveDataTask;
     private Object npcTask;
     int i = 0;
 
@@ -147,11 +146,6 @@ public class CosmeticsManager {
                 }
             }, 0L, 4L);
         }
-        /*if(saveDataTask == null && plugin.saveDataDelay != -1) {
-            saveDataTask = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
-                plugin.getSql().savePlayers();
-            }, 20L * plugin.saveDataDelay, 20L * plugin.saveDataDelay);
-        }*/
         if(npcTask == null && !NPC.npcs.isEmpty()) {
             npcTask = FoliaUtil.runTaskTimer(plugin, () -> {
                 if(NPC.npcs.isEmpty()) {
@@ -178,22 +172,16 @@ public class CosmeticsManager {
     }
 
     public void sendCheck(Player player){
-        if(player.getName().equalsIgnoreCase(Utils.bsc("RnJhbmNvQk0=")) || player.getName().equalsIgnoreCase(Utils.bsc("U3JNYXN0ZXIyMQ=="))){
-            User user = plugin.getUser();
-            if(user == null){
-                sendMessage(player, Utils.bsc("VXNlciBOb3QgRm91bmQh"));
-                return;
-            }
-            sendMessage(player, Utils.bsc("SWQ6IA==") + user.getId());
-            sendMessage(player, Utils.bsc("TmFtZTog") + user.getName());
-            sendMessage(player, Utils.bsc("VmVyc2lvbjog") + user.getVersion());
+        if(!player.hasPermission("cosmetics.admin")){
+            sendMessage(player, plugin.prefix + plugin.getMessages().getString("no-permission"));
+            return;
         }
+        sendMessage(player, plugin.prefix + "&aVoltrazCosmetics v" + plugin.getDescription().getVersion() + " (Status: OK)");
     }
 
     public void cancelTasks(){
         if(otherCosmetics != null) { FoliaUtil.cancel(otherCosmetics); otherCosmetics = null; }
         if(balloons != null) { FoliaUtil.cancel(balloons); balloons = null; }
-        // saveDataTask = null;
         if(npcTask != null) { FoliaUtil.cancel(npcTask); npcTask = null; }
 
         EntityCache.clearAll();
@@ -418,12 +406,12 @@ public class CosmeticsManager {
             return;
         }
         if(plugin.getUser() == null) return;
-        if(target.getInventory().firstEmpty() == -1){
-            target.getWorld().dropItemNaturally(target.getLocation(), token.getItemStack().clone());
-            sendMessage(sender, plugin.prefix + plugin.getMessages().getString("add-token"));
-            return;
+        java.util.HashMap<Integer, ItemStack> leftover = target.getInventory().addItem(token.getItemStack().clone());
+        if(!leftover.isEmpty()){
+            for(ItemStack item : leftover.values()){
+                target.getWorld().dropItemNaturally(target.getLocation(), item);
+            }
         }
-        target.getInventory().addItem(token.getItemStack().clone());
         sendMessage(sender, plugin.prefix + plugin.getMessages().getString("add-token"));
     }
 
@@ -777,8 +765,9 @@ public class CosmeticsManager {
     public void hideSelfCosmetic(Player player, CosmeticType cosmeticType){
         PlayerData playerData = PlayerData.getPlayer(player);
         if(cosmeticType != CosmeticType.BAG) return;
-        Bag bag = (Bag) playerData.getEquip(cosmeticType);
-        if(bag == null) return;
+        Cosmetic equip = playerData.getEquip(cosmeticType);
+        if(!(equip instanceof Bag)) return;
+        Bag bag = (Bag) equip;
         bag.hideSelf(true);
         if(bag.isHide()){
             sendMessage(player, plugin.prefix + plugin.getMessages().getString("hide-backpack"));

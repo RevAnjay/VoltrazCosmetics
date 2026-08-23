@@ -416,6 +416,11 @@ public final class VoltrazCosmetics extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        try {
+            HandlerList.unregisterAll(this);
+        } catch (Exception e) {
+            getLogger().warning("Failed to unregister event listeners: " + e.getMessage());
+        }
         if(proxy){
             try {
                 getServer().getMessenger().unregisterIncomingPluginChannel(this);
