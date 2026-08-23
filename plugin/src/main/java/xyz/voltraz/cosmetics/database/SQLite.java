@@ -7,6 +7,7 @@ import xyz.voltraz.cosmetics.nms.bag.EntityBag;
 import xyz.voltraz.cosmetics.nms.balloon.EntityBalloon;
 import xyz.voltraz.cosmetics.nms.balloon.PlayerBalloon;
 import xyz.voltraz.cosmetics.nms.spray.CustomSpray;
+import xyz.voltraz.cosmetics.utils.FoliaUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -219,7 +220,7 @@ public class SQLite extends SQL {
                 String spray = resultSet.getString("Spray");
                 playerData.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
                 playerData.loadCosmetics(cosmetics);
-                xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, player, () -> {
+                FoliaUtil.runTask(plugin, player, () -> {
                     playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
                     playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
                     playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));
@@ -262,7 +263,7 @@ public class SQLite extends SQL {
                     playerData.loadCosmetics(cosmetics);
                     PlayerBalloon.updatePlayerBalloon(player);
                     CustomSpray.updateSpray(player);
-                    xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, player, () -> {
+                    FoliaUtil.runTask(plugin, player, () -> {
                         PlayerData current = PlayerData.getPlayerIfPresent(player);
                         if(current != playerData) return;
                         EntityBag.updateEntityBag(player);

@@ -4,6 +4,7 @@ import xyz.voltraz.cosmetics.VoltrazCosmetics;
 import xyz.voltraz.cosmetics.api.Cosmetic;
 import xyz.voltraz.cosmetics.api.CosmeticType;
 import xyz.voltraz.cosmetics.utils.DefaultAttributes;
+import xyz.voltraz.cosmetics.utils.FoliaUtil;
 import xyz.voltraz.cosmetics.utils.Utils;
 import com.google.common.collect.Multimap;
 import org.bukkit.Bukkit;
@@ -181,7 +182,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         itemEntity.setPickupDelay(40);
         
         if(!overlaps) {
-            xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(VoltrazCosmetics.getInstance(), player, () -> {
+            FoliaUtil.runTask(VoltrazCosmetics.getInstance(), player, () -> {
                 player.getInventory().setHelmet(getItemPlaceholders(player));
                 player.updateInventory();
             });

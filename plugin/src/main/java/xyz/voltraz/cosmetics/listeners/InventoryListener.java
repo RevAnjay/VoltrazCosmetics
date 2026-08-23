@@ -6,6 +6,7 @@ import xyz.voltraz.cosmetics.cache.cosmetics.Hat;
 import xyz.voltraz.cosmetics.cache.inventories.Menu;
 import xyz.voltraz.cosmetics.cache.inventories.menus.FreeColoredMenu;
 import xyz.voltraz.cosmetics.cache.inventories.menus.TokenMenu;
+import xyz.voltraz.cosmetics.utils.FoliaUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -78,7 +79,7 @@ public class InventoryListener implements Listener {
             Player player = (Player) event.getPlayer();
             PlayerData playerData = PlayerData.getPlayerIfPresent(player);
             if(playerData != null && playerData.getHat() != null) {
-                xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLater(VoltrazCosmetics.getInstance(), () -> {
+                FoliaUtil.runTaskLater(VoltrazCosmetics.getInstance(), () -> {
                     if(!player.isOnline()) return;
                     Hat hat = playerData.getHat();
                     if(hat == null) return;

@@ -7,6 +7,7 @@ import xyz.voltraz.cosmetics.api.SprayKeys;
 import xyz.voltraz.cosmetics.cache.Sound;
 import xyz.voltraz.cosmetics.events.SprayDrawingEvent;
 import xyz.voltraz.cosmetics.nms.spray.CustomSpray;
+import xyz.voltraz.cosmetics.utils.FoliaUtil;
 import xyz.voltraz.cosmetics.utils.Utils;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
@@ -112,9 +113,9 @@ public class Spray extends Cosmetic {
             Utils.sendAllSound(frameLoc, Sound.getSound("spray"));
             customSpray = plugin.getVersion().createCustomSpray(player, frameLoc, result.getHitBlockFace(), item, null, rotation);
             update();
-            bukkitTask = xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLaterAsynchronously(plugin, () -> {
+            bukkitTask = FoliaUtil.runTaskLaterAsynchronously(plugin, () -> {
                 if(customSpray == null) {
-                    xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
+                    FoliaUtil.cancel(bukkitTask);
                     return;
                 }
                 update();
@@ -142,9 +143,9 @@ public class Spray extends Cosmetic {
             update();
         }
 
-        bukkitTask = xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLaterAsynchronously(plugin, () -> {
+        bukkitTask = FoliaUtil.runTaskLaterAsynchronously(plugin, () -> {
             if(customSpray == null) {
-                xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
+                FoliaUtil.cancel(bukkitTask);
                 return;
             }
             update();
@@ -180,7 +181,7 @@ public class Spray extends Cosmetic {
             customSpray.remove();
         }
         if(bukkitTask != null) {
-            xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
+            FoliaUtil.cancel(bukkitTask);
             bukkitTask = null;
         }
     }
@@ -193,7 +194,7 @@ public class Spray extends Cosmetic {
             customSpray = null;
         }
         if(bukkitTask != null) {
-            xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
+            FoliaUtil.cancel(bukkitTask);
             bukkitTask = null;
         }
     }
