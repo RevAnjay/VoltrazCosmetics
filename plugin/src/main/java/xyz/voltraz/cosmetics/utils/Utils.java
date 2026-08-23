@@ -37,7 +37,8 @@ public class Utils {
     private static final Random random = new Random();
 
     public static boolean isNewerThan1206() {
-        return getVersion().contains("1.20.6") || getVersion().contains("1.21");
+        String ver = getVersion();
+        return ver.contains("1.20.6") || ver.contains("1.21") || ver.contains("26.1") || ver.contains("26.2");
     }
 
     public static String getVersion() {
@@ -225,11 +226,11 @@ public class Utils {
     public static String ChatColor(String message) {
         String version = getVersion();
         if (version.contains("1.16") || version.contains("1.17") || version.contains("1.18") || version.contains("1.19")
-                || version.contains("1.20") || version.contains("1.21")) {
+                || version.contains("1.20") || version.contains("1.21") || version.contains("26.1") || version.contains("26.2")) {
             Matcher matcher = pattern.matcher(message);
             while (matcher.find()) {
                 String color = message.substring(matcher.start(), matcher.end());
-                message = message.replace(color, ChatColor.of(color) + "");
+                message = message.replace(color, net.md_5.bungee.api.ChatColor.of(color) + "");
                 matcher = pattern.matcher(message);
             }
         }

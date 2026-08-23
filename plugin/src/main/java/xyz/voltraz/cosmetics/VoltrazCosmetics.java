@@ -116,7 +116,9 @@ public final class VoltrazCosmetics extends JavaPlugin {
                 case "1.21.4": cn = "xyz.voltraz.cosmetics.nms.v1_21_R3.VersionHandler"; break;
                 case "1.21.5": cn = "xyz.voltraz.cosmetics.nms.v1_21_R4.VersionHandler"; break;
                 case "1.21.6": case "1.21.7": case "1.21.8": cn = "xyz.voltraz.cosmetics.nms.v1_21_R5.VersionHandler"; break;
-                case "1.21.9": case "1.21.10": case "1.21.11": cn = "xyz.voltraz.cosmetics.nms.v1_21_R7.VersionHandler"; break;
+                case "1.21.9": case "1.21.10": case "1.21.11":
+                case "26.1": case "26.2":
+                    cn = "xyz.voltraz.cosmetics.nms.v1_21_R7.VersionHandler"; break;
                 default: cn = null;
             }
             if (cn != null) version = (Version) Class.forName(cn).getDeclaredConstructor().newInstance();
