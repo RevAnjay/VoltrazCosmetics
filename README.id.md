@@ -17,7 +17,7 @@ Plugin kosmetik untuk server Minecraft yang memungkinkan pemain mengenakan item 
 ## 📋 Persyaratan
 
 - **Java** 21+
-- **Minecraft** 1.21 — 1.21.5+
+- **Minecraft** 1.21 — 1.21.11
 - **Server** Paper
 - **Maven** 3.6+ (untuk build)
 
@@ -35,7 +35,7 @@ Output JAR: `plugin/target/VoltrazCosmetics-x.jar`
 |-------|-----------|
 | `api` | API publik & class dasar (`Cosmetic`, `CosmeticType`) |
 | `plugin` | Plugin utama, listener, database, cache |
-| `v1_21_R1` — `v1_21_R5` | NMS adapter untuk MC 1.21.x |
+| `v1_21_R1` — `v1_21_R7` | NMS adapter untuk MC 1.21.x |
 | `meg3_support` / `meg4_support` | Integrasi ModelEngine |
 | `bungeecord` / `velocity` | Proxy support |
 
@@ -93,30 +93,6 @@ plugin/src/main/java/com/francobm/magicosmetics/
 ├── provider/                 # 3rd party integrations
 └── utils/                    # Utilities
 ```
-
-## 📝 Changelog Terbaru
-
-### v3.2.0
-- **Breaking:** Hapus support MC 1.16 — 1.20 (sekarang hanya 1.21+)
-- **Fix:** Helmet hilang/duplikat saat mati PvP dengan kosmetik aktif
-- **Fix:** PDC key kosmetik tetap terjaga di `getItemWithNBTsCopy()` semua versi NMS
-- **Perf:** Hapus `ItemStack.clone()` yang tidak perlu di death handler
-- **Fix:** Death handler menggunakan single-pass iterator untuk drop cleaning
-- **Fix:** `keepInventory` death path sekarang backup dan restore item dengan benar
-- **Refactor:** Hapus 10 modul NMS lama (v1_16_R3 — v1_20_R4)
-- **Fix:** MCChannelHandler packet interceptor dioptimasi di semua versi v1_21
-
-### v3.1.1
-- **Fix:** Helmet tidak hilang lagi saat player disconnect/quit dengan kosmetik aktif
-- **Fix:** Helmet tidak hilang saat death dengan `keepInventory: true`
-- **Fix:** Walking stick tidak lagi menggantikan item di off-hand
-- **Fix:** `clearClose()` sekarang me-restore item tersimpan di mode non-overlaps
-- **Fix:** Menghapus double `clearCosmeticsToSaveData()` yang membatalkan restorasi item
-- **Fix:** `PlayerData.players` menggunakan `ConcurrentHashMap` untuk thread safety
-- **Fix:** `EntityCache.entities` menggunakan `ConcurrentHashMap` untuk thread safety
-- **Fix:** Typo di `EntityCache.activeWStick()` yang menggunakan `hat` bukan `wStick`
-- **Fix:** HikariCP connection pool sekarang di-close saat plugin disable
-- **Fix:** Null check pada `PlayerData.getPlayer()` di semua event handler
 
 ## 📄 Lisensi
 
