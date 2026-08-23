@@ -32,5 +32,5 @@ MySQL:
   user: "root"
   password: "password"
   table: "player_cosmetics"
-  database: "magicosmetics"
+  database: "voltrazcosmetics"
 on_execute_cosmetics: ""

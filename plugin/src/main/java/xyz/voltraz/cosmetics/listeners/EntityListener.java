@@ -1,0 +1,47 @@
+package xyz.voltraz.cosmetics.listeners;
+
+import xyz.voltraz.cosmetics.VoltrazCosmetics;
+import xyz.voltraz.cosmetics.utils.FoliaUtil;
+import xyz.voltraz.cosmetics.utils.XMaterial;
+import org.bukkit.entity.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityUnleashEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+
+import java.util.Optional;
+
+public class EntityListener implements Listener {
+
+    private VoltrazCosmetics plugin = VoltrazCosmetics.getInstance();
+
+    @EventHandler
+    public void onInteractArmorStand(PlayerArmorStandManipulateEvent event){
+        ArmorStand armorStand = event.getRightClicked();
+        if(!armorStand.hasMetadata("cosmetics")) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void EntityUnleash(EntityUnleashEvent event){
+        if(!(event.getEntity() instanceof PufferFish)) return;
+        if(!event.getEntity().hasMetadata("cosmetics")) return;
+        LivingEntity livingEntity = (LivingEntity) event.getEntity();
+        if(!(livingEntity.getLeashHolder() instanceof Player)) return;
+        Player player = (Player) livingEntity.getLeashHolder();
+        livingEntity.setLeashHolder(null);
+        FoliaUtil.runTask(plugin, livingEntity, () -> {
+            livingEntity.setLeashHolder(player);
+            Optional<Item> lead = livingEntity.getNearbyEntities(15, 15, 15).stream()
+                    .filter(entity -> entity instanceof Item)
+                    .map(entity -> (Item)entity)
+                    .filter(item -> item.getItemStack().getType() == XMaterial.LEAD.parseMaterial())
+                    .findFirst();
+
+            if(!lead.isPresent()){
+                return;
+            }
+            lead.get().remove();
+        });
+    }
+}

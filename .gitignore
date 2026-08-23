@@ -1,4 +1,6 @@
 # User-specific stuff
+.pi-tasks/
+{}
 .idea/
 
 *.iml

@@ -1,0 +1,11 @@
+{
+  "id": "VoltrazCosmetics",
+  "name": "VoltrazCosmetics",
+  "version": "${project.version}",
+  "description": "Magic cosmetics for Velocity proxy",
+  "authors": ["FrancoBM", "RevelX"],
+  "main": "xyz.voltraz.cosmetics.velocity.MagicCosmetics",
+  "dependencies": {
+    "required": ["velocity"]
+  }
+}

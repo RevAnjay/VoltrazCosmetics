@@ -1,4 +1,4 @@
 name: MagicCosmetics
-main: com.francobm.magicosmetics.bungeecord.MagicCosmetics
+main: xyz.voltraz.cosmetics.bungeecord.MagicCosmetics
 version: '${project.version}'
 author: FrancoBM

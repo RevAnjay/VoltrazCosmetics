@@ -4,8 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>magicosmetics</artifactId>
-        <groupId>com.francobm</groupId>
+        <groupId>xyz.voltraz</groupId>
         <version>1.4-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <version>3.3.0</version>
     <modelVersion>4.0.0</modelVersion>
@@ -116,22 +117,52 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <version>1.21.11-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
             <artifactId>meg4_support</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
             <artifactId>meg3_support</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
             <artifactId>api</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
+            <artifactId>v1_21_R1</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
+            <artifactId>v1_21_R2</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
+            <artifactId>v1_21_R3</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
+            <artifactId>v1_21_R4</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
+            <artifactId>v1_21_R5</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>xyz.voltraz.cosmetics.versions</groupId>
+            <artifactId>v1_21_R7</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -143,36 +174,6 @@
             <groupId>com.francobm.magicosmetics</groupId>
             <artifactId>velocity</artifactId>
             <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
-            <artifactId>v1_21_R1</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
-            <artifactId>v1_21_R2</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
-            <artifactId>v1_21_R3</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
-            <artifactId>v1_21_R4</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
-            <artifactId>v1_21_R5</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.francobm.magicosmetics.versions</groupId>
-            <artifactId>v1_21_R7</artifactId>
-            <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -219,12 +220,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>lol.pyr</groupId>
-            <artifactId>znpcsplus-api</artifactId>
-            <version>2.0.0-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
         <!-- SkinsRestorer API -->
         <dependency>
             <groupId>net.skinsrestorer</groupId>
@@ -262,14 +257,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- MultiverseCore dependency removed: MVTeleportEvent no longer exists in MV5,
-             and PlayerListener.onTeleport handles all teleport events via Bukkit API -->
-        <dependency>
-            <groupId>com.onarandombox.multiverseinventories</groupId> <!-- Don't forget to replace this -->
-            <artifactId>Multiverse-Inventories</artifactId> <!-- Replace this as well -->
-            <version>4.2.4-SNAPSHOT</version> <!-- This too -->
-            <scope>provided</scope>
-        </dependency>
         
         <!-- authlib removed: provided transitively by server runtime via NMS modules -->
         <!-- commons-lang removed: migrated to commons-lang3 (bundled in Paper) -->

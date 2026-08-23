@@ -1,0 +1,583 @@
+package xyz.voltraz.cosmetics.listeners;
+
+import xyz.voltraz.cosmetics.VoltrazCosmetics;
+import xyz.voltraz.cosmetics.api.Cosmetic;
+import xyz.voltraz.cosmetics.api.SprayKeys;
+import xyz.voltraz.cosmetics.cache.*;
+import xyz.voltraz.cosmetics.cache.cosmetics.CosmeticInventory;
+import xyz.voltraz.cosmetics.events.CosmeticInventoryUpdateEvent;
+import xyz.voltraz.cosmetics.events.PlayerDataLoadEvent;
+import xyz.voltraz.cosmetics.utils.FoliaUtil;
+import xyz.voltraz.cosmetics.utils.Utils;
+import xyz.voltraz.cosmetics.utils.XMaterial;
+import org.bukkit.Location;
+import org.bukkit.entity.*;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.PlayerLeashEntityEvent;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.*;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.Iterator;
+
+public class PlayerListener implements Listener {
+    private final VoltrazCosmetics plugin = VoltrazCosmetics.getInstance();
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event){
+        Player player = event.getPlayer();
+        EntityIdCache.register(player);
+        plugin.getVersion().getPacketReader().injectPlayer(player);
+        if(plugin.isHuskSync() || plugin.isMpdb()){
+            return;
+        }
+        plugin.getSql().loadPlayerAsync(player).thenAccept(playerData -> {
+            if(plugin.isProxy()) {
+                FoliaUtil.runTask(plugin, player, playerData::sendLoadPlayerData);
+            }
+        });
+    }
+
+    @EventHandler
+    public void onLoadData(PlayerDataLoadEvent event){
+        PlayerData playerData = event.getPlayerData();
+        playerData.verifyWorldBlackList(plugin);
+    }
+
+    @EventHandler
+    public void onCommand(PlayerCommandPreprocessEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || !playerData.isZone()) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onQuit(PlayerQuitEvent event){
+        Player player = event.getPlayer();
+        EntityIdCache.unregister(player);
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        /*if(plugin.isHuskSync()){
+            plugin.getHuskSync().saveDataToPlayer(playerData);
+            return;
+        }*/
+        // plugin.getVersion().getPacketReader().removePlayer(player);
+        try {
+            plugin.getVersion().getPacketReader().removePlayer(event.getPlayer());
+        } catch (Exception e) {
+            VoltrazCosmetics.getInstance().getLogger().warning("Failed to remove packet reader for " + event.getPlayer().getName() + " - " + e.getMessage());
+        }
+        try {
+            if(playerData.isZone()){
+                playerData.exitZoneSync();
+            }
+            // Restore saved helmet/offhand items before server saves player data
+            // This prevents the cosmetic item from being saved as the player's helmet
+            playerData.clearCosmeticsToSaveData();
+        } catch (Exception e) {
+            VoltrazCosmetics.getInstance().getLogger().warning("Error during quit cleanup for " + event.getPlayer().getName() + ": " + e.getMessage());
+        } finally {
+            // Always remove and save — even if cleanup above threw an exception
+            PlayerData.removePlayer(playerData);
+            plugin.getSql().savePlayerAsync(playerData);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onTeleport(PlayerTeleportEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        if(playerData.isZone()){
+            if(!playerData.isSpectator()) return;
+            event.setCancelled(true);
+        }
+
+        playerData.clearCosmeticsInUse(false);
+        //PlayerBag.refreshPlayerBag(player);
+        /*if(event.getFrom().getWorld() != null && event.getTo().getWorld() != null && event.getFrom().getWorld().getUID().equals(event.getTo().getWorld().getUID())) {
+            if (event.getFrom().distanceSquared(event.getTo()) < 10) return;
+        }*/
+    }
+
+    @EventHandler
+    public void onUnleash(PlayerUnleashEntityEvent event){
+        if(!(event.getEntity() instanceof PufferFish)) return;
+        if(!event.getEntity().hasMetadata("cosmetics")) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void OnLeash(PlayerLeashEntityEvent event){
+        if(!(event.getEntity() instanceof PufferFish)) return;
+        if(!event.getEntity().hasMetadata("cosmetics")) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        if(playerData.getHat() != null) {
+            playerData.getHat().setClosing(false);
+            if(playerData.getDeathBackupHelmet() != null) {
+                playerData.getHat().setCurrentItemSaved(playerData.getDeathBackupHelmet());
+            }
+        }
+        if(playerData.getWStick() != null) {
+            playerData.getWStick().setClosing(false);
+            if(playerData.getDeathBackupWStick() != null) {
+                playerData.getWStick().setCurrentItemSaved(playerData.getDeathBackupWStick());
+            }
+        }
+        playerData.clearDeathBackup();
+        playerData.activeCosmeticsInventory();
+    }
+
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        if(playerData.getSpray() != null) {
+            if (plugin.getSprayKey() == null) return;
+            if (!plugin.getSprayKey().isKey(SprayKeys.SHIFT_Q)) return;
+            if (!player.isSneaking()) return;
+            event.setCancelled(true);
+            playerData.draw(plugin.getSprayKey());
+        }
+        if(!Utils.isNewerThan1206()) return;
+        //Method to prevent duplicated items when dropping
+        String nbt = plugin.getVersion().isNBTCosmetic(event.getItemDrop().getItemStack());
+        if(nbt == null || nbt.isEmpty()) return;
+        event.getItemDrop().remove();
+    }
+
+    @EventHandler
+    public void onSneak(PlayerToggleSneakEvent event){
+        Player player = event.getPlayer();
+        if(!event.isSneaking()) return;
+        plugin.getZonesManager().exitZone(player);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onDead(PlayerDeathEvent event){
+        Player player = event.getEntity();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        playerData.clearCosmeticsInUse(false);
+        if(event.getKeepInventory()) {
+            if(playerData.getHat() != null) {
+                playerData.setDeathBackupHelmet(playerData.getHat().getCurrentItemSaved());
+                playerData.getHat().clearClose();
+            }
+            if(playerData.getWStick() != null) {
+                playerData.setDeathBackupWStick(playerData.getWStick().getCurrentItemSaved());
+                playerData.getWStick().clearClose();
+            }
+            return;
+        }
+
+        ItemStack savedHelmet = null;
+        ItemStack savedWStick = null;
+        if(playerData.getHat() != null) {
+            savedHelmet = playerData.getHat().getSavedItemForDeath();
+        }
+        if(playerData.getWStick() != null) {
+            savedWStick = playerData.getWStick().getSavedItemForDeath();
+        }
+
+        boolean removedHelmetDupe = false;
+        boolean removedWStickDupe = false;
+        Iterator<ItemStack> stackList = event.getDrops().iterator();
+        while (stackList.hasNext()){
+            ItemStack itemStack = stackList.next();
+            if(itemStack == null) continue;
+            if(playerData.getHat() != null && playerData.getHat().isCosmetic(itemStack)){
+                stackList.remove();
+                removedHelmetDupe = true;
+                continue;
+            }
+            if(playerData.getWStick() != null && playerData.getWStick().isCosmetic(itemStack)){
+                stackList.remove();
+                removedWStickDupe = true;
+                continue;
+            }
+            if(!removedHelmetDupe && savedHelmet != null && itemStack.isSimilar(savedHelmet)){
+                stackList.remove();
+                removedHelmetDupe = true;
+                continue;
+            }
+            if(!removedWStickDupe && savedWStick != null && itemStack.isSimilar(savedWStick)){
+                stackList.remove();
+                removedWStickDupe = true;
+            }
+        }
+
+        if(savedHelmet != null && removedHelmetDupe) event.getDrops().add(savedHelmet);
+        if(savedWStick != null && removedWStickDupe) event.getDrops().add(savedWStick);
+
+        if(playerData.getHat() != null && savedHelmet != null && removedHelmetDupe) {
+            playerData.getHat().forceRemove();
+        }
+        if(playerData.getWStick() != null && savedWStick != null && removedWStickDupe) {
+            playerData.getWStick().forceRemove();
+        }
+        if(playerData.getHat() != null) {
+            playerData.getHat().setClosing(true);
+        }
+        if(playerData.getWStick() != null) {
+            playerData.getWStick().setClosing(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onItemFrame(PlayerInteractEntityEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        if(event.getHand() != EquipmentSlot.OFF_HAND) return;
+        if(playerData.getWStick() == null) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onBlock(BlockPlaceEvent event) {
+        if(event.getHand() != EquipmentSlot.OFF_HAND) return;
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || playerData.getWStick() == null) return;
+        if(!playerData.getWStick().isCosmetic(event.getItemInHand())) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInteractDupe(PlayerInteractEvent event){
+        if(event.getHand() != EquipmentSlot.OFF_HAND) return;
+        if(Utils.isNewerThan1206()) {
+            if(!(event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR)) {
+                Player player = event.getPlayer();
+                PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+                if (playerData == null || playerData.getWStick() == null) return;
+                ItemStack itemStack = event.getItem();
+                if (itemStack == null) return;
+                String nbt = plugin.getVersion().isNBTCosmetic(itemStack);
+                if (nbt == null || nbt.isEmpty()) return;
+                event.setCancelled(true);
+                return;
+            }
+        }
+        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null || playerData.getWStick() == null) return;
+        ItemStack itemStack = event.getItem();
+        if(itemStack == null) return;
+        String nbt = plugin.getVersion().isNBTCosmetic(itemStack);
+        if(nbt == null || nbt.isEmpty()) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInteract(PlayerInteractEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        ItemStack itemStack = event.getItem();
+        if(itemStack != null) {
+            if(itemStack.getType() == XMaterial.BLAZE_ROD.parseMaterial()){
+                String nbt = plugin.getVersion().isNBTCosmetic(itemStack);
+                //plugin.getLogger().info("NBT: " + nbt);
+                if(!nbt.startsWith("wand")) return;
+                Zone zone = Zone.getZone(nbt.substring(4));
+                if(zone == null) return;
+                event.setCancelled(true);
+                if(event.getAction() == Action.LEFT_CLICK_BLOCK){
+                    Location location = event.getClickedBlock().getLocation();
+                    zone.setCorn1(location);
+                    player.sendMessage(plugin.prefix + plugin.getMessages().getString("set-corn1").replace("%name%", zone.getName()));
+                    return;
+                }
+                if(event.getAction() == Action.RIGHT_CLICK_BLOCK){
+                    Location location = event.getClickedBlock().getLocation();
+                    zone.setCorn2(location);
+                    player.sendMessage(plugin.prefix + plugin.getMessages().getString("set-corn2").replace("%name%", zone.getName()));
+                    return;
+                }
+                return;
+            }
+            if(itemStack.getType().toString().toUpperCase().endsWith("HELMET") || itemStack.getType().toString().toUpperCase().endsWith("HEAD") || itemStack.getType().toString().toUpperCase().contains("SKULL") || itemStack.getType().toString().toUpperCase().equals("CARVED_PUMPKIN")){
+                if(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                    if (playerData.getHat() != null) {
+                        if(playerData.getHat().isHideCosmetic()) return;
+                        event.setCancelled(true);
+                        event.setUseItemInHand(Event.Result.DENY);
+                        ItemStack returnItem = playerData.getHat().changeItem(itemStack);
+                        if(event.getHand() == EquipmentSlot.OFF_HAND){
+                            player.getInventory().setItemInOffHand(returnItem);
+                        }else{
+                            player.getInventory().setItemInMainHand(returnItem);
+                        }
+                        // Delayed inventory update to prevent vanilla armor equip bypassing cancellation (1.21.8+)
+                        final ItemStack savedHelmet = playerData.getHat().getCurrentItemSaved();
+                        FoliaUtil.runTask(plugin, player, () -> {
+                            PlayerData pd = PlayerData.getPlayerIfPresent(player);
+                            if(pd == null || pd.getHat() == null) return;
+                            pd.getHat().update();
+                            player.updateInventory();
+                        });
+                    }
+                }
+            }
+            /*
+            if(playerData.getWStick() != null && event.getHand() == EquipmentSlot.OFF_HAND) {
+                event.setCancelled(true);
+            }*/
+        }
+        if(plugin.getSprayKey() == null) return;
+        if(playerData.getSpray() == null) return;
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (!plugin.getSprayKey().isKey(SprayKeys.SHIFT_RC)) return;
+            if (!player.isSneaking()) return;
+            playerData.draw(plugin.getSprayKey());
+            event.setCancelled(true);
+        }
+        if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            if (!plugin.getSprayKey().isKey(SprayKeys.SHIFT_LC)) return;
+            if (!player.isSneaking()) return;
+            playerData.draw(plugin.getSprayKey());
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerChange(PlayerSwapHandItemsEvent event){
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        ItemStack mainHand = event.getMainHandItem();
+        if(playerData.getWStick() != null) {
+            event.setCancelled(true);
+        }
+
+        if(playerData.getSpray() == null) return;
+        if(plugin.getSprayKey() == null) return;
+        if (!plugin.getSprayKey().isKey(SprayKeys.SHIFT_F)) return;
+        if (!player.isSneaking()) return;
+        playerData.draw(plugin.getSprayKey());
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onAttack(EntityDamageByEntityEvent event){
+        if(!(event.getDamager() instanceof Player)) return;
+        if(!(event.getEntity() instanceof PufferFish)) return;
+        if(!event.getEntity().hasMetadata("cosmetics")) return;
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void playerHeld(PlayerItemHeldEvent event){
+        Player player = event.getPlayer();
+        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
+        ItemStack oldItem = player.getInventory().getItem(event.getPreviousSlot());
+        if (oldItem != null) {
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData == null) return;
+            if (playerData.getHat() != null) {
+                if (playerData.getHat().isCosmetic(oldItem)) {
+                    player.getInventory().removeItem(oldItem);
+                }
+            }
+            if (playerData.getWStick() != null) {
+                if (playerData.getWStick().isCosmetic(oldItem)) {
+                    player.getInventory().removeItem(oldItem);
+                }
+            }
+        }
+        if(newItem != null) {
+            PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+            if(playerData == null) return;
+            if (playerData.getHat() != null) {
+                if (playerData.getHat().isCosmetic(newItem)) {
+                    player.getInventory().removeItem(newItem);
+                }
+            }
+            if(playerData.getWStick() != null){
+                if (playerData.getWStick().isCosmetic(newItem)) {
+                    player.getInventory().removeItem(newItem);
+                }
+            }
+        }
+    }
+
+    /**
+     * remove te item when drop
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void playerDrop(PlayerDropItemEvent event){
+        Player player = event.getPlayer();
+        Item item = event.getItemDrop();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        if(playerData.getHat() != null) {
+            if (playerData.getHat().isCosmetic(item.getItemStack())){
+                event.setCancelled(false);
+                item.remove();
+            }
+        }
+        if(playerData.getWStick() != null){
+            if (playerData.getWStick().isCosmetic(item.getItemStack())) {
+                event.setCancelled(false);
+                item.remove();
+            }
+        }
+    }
+
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onChangeWorld(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        playerData.verifyWorldBlackList(plugin);
+    }
+
+    @EventHandler
+    public void onInteractInventory(CosmeticInventoryUpdateEvent event) {
+        Player player = event.getPlayer();
+        Cosmetic cosmetic = (Cosmetic) event.getCosmetic();
+        PlayerData pd = PlayerData.getPlayerIfPresent(player);
+        if(pd != null && pd.getEquip((String) event.getCosmeticType()) != cosmetic) return;
+        if(cosmetic.isHideCosmetic()) return;
+        ItemStack itemStack = event.getItemToChange();
+        CosmeticInventory cosmeticInventory = (CosmeticInventory) cosmetic;
+        if(itemStack == null || itemStack.getType().isAir()){
+            if(!cosmeticInventory.isOverlaps()) {
+                cosmeticInventory.setCurrentItemSaved(null);
+            }
+            cosmetic.update();
+            return;
+        }
+        if(plugin.getMagicCrates() != null && plugin.getMagicCrates().hasInCrate(player)) return;
+        if(plugin.getMagicGestures() != null && plugin.getMagicGestures().hasInWardrobe(player)) return;
+        boolean hasItemSaved = cosmeticInventory.getCurrentItemSaved() != null;
+        if(hasItemSaved) {
+            if (itemStack.isSimilar(cosmeticInventory.getCurrentItemSaved())) return;
+        }
+        if(!cosmeticInventory.isOverlaps()) {
+            if(cosmetic.isCosmetic(itemStack)) return;
+            if(player.getInventory().getItemInMainHand().getType().isAir() || cosmetic.isCosmetic(player.getInventory().getItemInMainHand())){
+                player.getInventory().setItemInMainHand(null);
+            }
+            cosmeticInventory.setCurrentItemSaved(itemStack);
+            return;
+        }
+        ItemStack oldItem = cosmeticInventory.changeItem(itemStack);
+        if(oldItem == null) {
+            if(cosmetic.isCosmetic(player.getInventory().getItemInMainHand())) {
+                player.getInventory().setItemInMainHand(null);
+            }
+            return;
+        }
+        if(hasItemSaved && oldItem.isSimilar(cosmeticInventory.getCurrentItemSaved())) return;
+        if(itemStack.isSimilar(oldItem)) return;
+        if(player.getOpenInventory().getType() == InventoryType.PLAYER) {
+            player.setItemOnCursor(oldItem);
+            return;
+        }
+        if(player.getInventory().getItemInMainHand().getType().isAir() || cosmetic.isCosmetic(player.getInventory().getItemInMainHand())){
+            player.getInventory().setItemInMainHand(oldItem);
+            return;
+        }
+        java.util.HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(oldItem);
+        if(!leftover.isEmpty()){
+            for(ItemStack item : leftover.values()){
+                player.getWorld().dropItemNaturally(player.getLocation(), item);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onInventory(InventoryClickEvent event){
+        Player player = (Player) event.getWhoClicked();
+        PlayerData playerData = PlayerData.getPlayerIfPresent(player);
+        if(playerData == null) return;
+        if(event.getClickedInventory() == null) return;
+        if(event.getClickedInventory().getType() != InventoryType.PLAYER) {
+            if(playerData.getWStick() != null && event.getClick() == ClickType.SWAP_OFFHAND) event.setCancelled(true);
+            return;
+        }
+        if(playerData.getWStick() != null) {
+            if(playerData.getWStick().isHideCosmetic()) return;
+            if (event.getClick() == ClickType.SWAP_OFFHAND) {
+                event.setCancelled(true);
+                return;
+            }
+            if(event.getCursor() != null) {
+                if (playerData.getWStick().isCosmetic(event.getCursor()))
+                    player.setItemOnCursor(null);
+            }
+            if(event.getSlotType() == InventoryType.SlotType.QUICKBAR && event.getSlot() == 40){
+                if(event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT || event.getClick() == ClickType.RIGHT || (playerData.getWStick().isCosmetic(event.getCurrentItem()) && event.getCursor() == null && playerData.getWStick().getCurrentItemSaved() == null || playerData.getWStick().isCosmetic(event.getCurrentItem()) && event.getCursor() != null && event.getCursor().getType().isAir() && playerData.getWStick().getCurrentItemSaved() == null)) {
+                    event.setCancelled(true);
+                    return;
+                }
+
+                if (event.getClick() == ClickType.DROP || event.getClick() == ClickType.CONTROL_DROP) {
+                    if(playerData.getWStick().getCurrentItemSaved() != null){
+                        playerData.getWStick().dropItem(event.getClick() == ClickType.CONTROL_DROP);
+                        event.setCancelled(playerData.getWStick().isOverlaps());
+                    }
+                    return;
+                }
+                event.setCancelled(true);
+                ItemStack returnItem = playerData.getWStick().changeItem(event.getCursor() != null && event.getCursor().getType().isAir() ? null : event.getCursor());
+                player.setItemOnCursor(returnItem);
+                player.updateInventory();
+                return;
+            }
+        }
+        if (playerData.getHat() != null) {
+            if(playerData.getHat().isHideCosmetic()) return;
+            if(event.getCursor() != null){
+                if(playerData.getHat().isCosmetic(event.getCursor()))
+                    player.setItemOnCursor(null);
+            }
+            if(event.getSlotType() == InventoryType.SlotType.ARMOR && event.getSlot() == 39){
+                if(event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT || event.getClick() == ClickType.RIGHT || (playerData.getHat().isCosmetic(event.getCurrentItem()) && event.getCursor() == null && playerData.getHat().getCurrentItemSaved() == null || playerData.getHat().isCosmetic(event.getCurrentItem()) && event.getCursor() != null && event.getCursor().getType().isAir() && playerData.getHat().getCurrentItemSaved() == null)) {
+                    event.setCancelled(true);
+                    return;
+                }
+
+                if (event.getClick() == ClickType.DROP || event.getClick() == ClickType.CONTROL_DROP) {
+                    if(playerData.getHat().getCurrentItemSaved() != null){
+                        playerData.getHat().dropItem(event.getClick() == ClickType.CONTROL_DROP);
+                        event.setCancelled(playerData.getHat().isOverlaps());
+                        //plugin.getLogger().info("Hat Cosmetic Dropped");
+                    }
+                    return;
+                }
+
+                event.setCancelled(true);
+                if(event.getCursor() == null || event.getCursor().getType().isAir() || event.getCursor().getType().name().endsWith("HELMET") || event.getCursor().getType().name().endsWith("HEAD") || player.hasPermission("magicosmetics.hat.use")) {
+                    ItemStack returnItem = playerData.getHat().changeItem(event.getCursor() != null && event.getCursor().getType().isAir() ? null : event.getCursor());
+                    player.setItemOnCursor(returnItem);
+                    player.updateInventory();
+                }
+            }
+        }
+    }
+}
