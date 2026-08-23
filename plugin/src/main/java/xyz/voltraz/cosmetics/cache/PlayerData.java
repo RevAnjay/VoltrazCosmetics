@@ -1317,7 +1317,7 @@ public class PlayerData {
             if(bossBar.getPlayers().contains(player)) continue;
             bossBar.addPlayer(player);
         }
-        plugin.getServer().getScheduler().runTaskLater(plugin, (task) -> {
+        xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLater(plugin, player, () -> {
             if(hat != null)
                 hat.setHideCosmetic(true);
             if(wStick != null)
@@ -1388,7 +1388,7 @@ public class PlayerData {
         for(BossBar bossBar : plugin.getBossBar()){
             bossBar.removePlayer(player);
         }
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+        xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLater(plugin, player, () -> {
             loadItems();
             if(plugin.gameMode == null){
                 player.setGameMode(gameMode);
@@ -1793,7 +1793,8 @@ public class PlayerData {
         String balloon = cosmetics[3];
         String spray = cosmetics[4];
         //Bukkit.getLogger().info("Cosmetics: " + loadUseCosmetics);
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        Player p = offlinePlayer != null ? offlinePlayer.getPlayer() : null;
+        xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, p, () -> {
             setCosmetic(CosmeticType.HAT, getCosmeticById(hat));
             setCosmetic(CosmeticType.WALKING_STICK, getCosmeticById(wStick));
             setCosmetic(CosmeticType.BAG, getCosmeticById(bag));

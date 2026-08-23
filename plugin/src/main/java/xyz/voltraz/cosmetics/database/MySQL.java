@@ -83,7 +83,7 @@ public class MySQL extends SQL{
                 playerData.setOfflinePlayer(Bukkit.getOfflinePlayer(player.getUniqueId()));
                 playerData.loadCosmetics(cosmetics);
 
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, player, () -> {
                     playerData.setCosmetic(CosmeticType.HAT, playerData.getCosmeticById(hat));
                     playerData.setCosmetic(CosmeticType.BAG,playerData.getCosmeticById(bag));
                     playerData.setCosmetic(CosmeticType.WALKING_STICK,playerData.getCosmeticById(wStick));
@@ -194,7 +194,7 @@ public class MySQL extends SQL{
                     playerData.loadCosmetics(cosmetics);
                     PlayerBalloon.updatePlayerBalloon(player);
                     CustomSpray.updateSpray(player);
-                    plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, player, () -> {
                         PlayerData current = PlayerData.getPlayerIfPresent(player);
                         if(current != playerData) return;
                         EntityBag.updateEntityBag(player);

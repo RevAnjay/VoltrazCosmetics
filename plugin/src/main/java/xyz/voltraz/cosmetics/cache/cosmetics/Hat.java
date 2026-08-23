@@ -181,7 +181,7 @@ public class Hat extends Cosmetic implements CosmeticInventory {
         itemEntity.setPickupDelay(40);
         
         if(!overlaps) {
-            VoltrazCosmetics.getInstance().getServer().getScheduler().runTask(VoltrazCosmetics.getInstance(), () -> {
+            xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(VoltrazCosmetics.getInstance(), player, () -> {
                 player.getInventory().setHelmet(getItemPlaceholders(player));
                 player.updateInventory();
             });

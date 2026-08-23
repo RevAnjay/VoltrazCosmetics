@@ -24,7 +24,7 @@ import java.awt.image.BufferedImage;
 public class Spray extends Cosmetic {
 
     private CustomSpray customSpray;
-    private BukkitTask bukkitTask;
+    private Object bukkitTask;
     private BufferedImage image;
     private boolean itemImage;
     private boolean paint = false;
@@ -112,14 +112,13 @@ public class Spray extends Cosmetic {
             Utils.sendAllSound(frameLoc, Sound.getSound("spray"));
             customSpray = plugin.getVersion().createCustomSpray(player, frameLoc, result.getHitBlockFace(), item, null, rotation);
             update();
-            bukkitTask = plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            bukkitTask = xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLaterAsynchronously(plugin, () -> {
                 if(customSpray == null) {
-                    bukkitTask.cancel();
+                    xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
                     return;
                 }
-                remove();
-            }, plugin.getSprayStayTime());
-            return;
+                update();
+            }, 1000L);
         }
         if(image != null) {
             ItemStack map = Utils.getMapImage(player, image, this);
@@ -143,13 +142,13 @@ public class Spray extends Cosmetic {
             update();
         }
 
-        bukkitTask = plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+        bukkitTask = xyz.voltraz.cosmetics.utils.FoliaUtil.runTaskLaterAsynchronously(plugin, () -> {
             if(customSpray == null) {
-                bukkitTask.cancel();
+                xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
                 return;
             }
-            remove();
-        }, plugin.getSprayStayTime());
+            update();
+        }, 1000L);
     }
 
     @Override
@@ -179,10 +178,9 @@ public class Spray extends Cosmetic {
         if(customSpray != null) {
             customSpray.setPreview(false);
             customSpray.remove();
-            customSpray = null;
         }
         if(bukkitTask != null) {
-            bukkitTask.cancel();
+            xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
             bukkitTask = null;
         }
     }
@@ -195,7 +193,7 @@ public class Spray extends Cosmetic {
             customSpray = null;
         }
         if(bukkitTask != null) {
-            bukkitTask.cancel();
+            xyz.voltraz.cosmetics.utils.FoliaUtil.cancel(bukkitTask);
             bukkitTask = null;
         }
     }

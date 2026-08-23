@@ -42,7 +42,7 @@ public class PlayerListener implements Listener {
         }
         plugin.getSql().loadPlayerAsync(player).thenAccept(playerData -> {
             if(plugin.isProxy()) {
-                plugin.getServer().getScheduler().runTask(plugin, playerData::sendLoadPlayerData);
+                xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, player, playerData::sendLoadPlayerData);
             }
         });
     }
@@ -331,7 +331,7 @@ public class PlayerListener implements Listener {
                         }
                         // Delayed inventory update to prevent vanilla armor equip bypassing cancellation (1.21.8+)
                         final ItemStack savedHelmet = playerData.getHat().getCurrentItemSaved();
-                        plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, player, () -> {
                             PlayerData pd = PlayerData.getPlayerIfPresent(player);
                             if(pd == null || pd.getHat() == null) return;
                             pd.getHat().update();

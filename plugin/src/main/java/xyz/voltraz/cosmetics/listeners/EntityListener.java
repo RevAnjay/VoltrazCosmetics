@@ -29,7 +29,7 @@ public class EntityListener implements Listener {
         if(!(livingEntity.getLeashHolder() instanceof Player)) return;
         Player player = (Player) livingEntity.getLeashHolder();
         livingEntity.setLeashHolder(null);
-        plugin.getServer().getScheduler().runTask(plugin, (task) -> {
+        xyz.voltraz.cosmetics.utils.FoliaUtil.runTask(plugin, livingEntity, () -> {
             livingEntity.setLeashHolder(player);
             Optional<Item> lead = livingEntity.getNearbyEntities(15, 15, 15).stream()
                     .filter(entity -> entity instanceof Item)
@@ -38,7 +38,6 @@ public class EntityListener implements Listener {
                     .findFirst();
 
             if(!lead.isPresent()){
-                task.cancel();
                 return;
             }
             lead.get().remove();

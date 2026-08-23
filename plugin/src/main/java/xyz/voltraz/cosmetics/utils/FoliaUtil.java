@@ -34,7 +34,25 @@ public final class FoliaUtil {
 
     public static Object runTaskLater(Plugin plugin, Runnable task, long delay) {
         if (isFolia()) {
-            return Bukkit.getGlobalRegionScheduler().runDelayed(plugin, st -> task.run(), delay);
+            return Bukkit.getGlobalRegionScheduler().runDelayed(plugin, st -> task.run(), Math.max(delay, 1));
+        } else {
+            return Bukkit.getScheduler().runTaskLater(plugin, task, delay);
+        }
+    }
+
+    public static Object runTask(Plugin plugin, org.bukkit.entity.Entity entity, Runnable task) {
+        if (entity == null) return runTask(plugin, task);
+        if (isFolia()) {
+            return entity.getScheduler().run(plugin, st -> task.run(), null);
+        } else {
+            return Bukkit.getScheduler().runTask(plugin, task);
+        }
+    }
+
+    public static Object runTaskLater(Plugin plugin, org.bukkit.entity.Entity entity, Runnable task, long delay) {
+        if (entity == null) return runTaskLater(plugin, task, delay);
+        if (isFolia()) {
+            return entity.getScheduler().runDelayed(plugin, st -> task.run(), null, Math.max(delay, 1));
         } else {
             return Bukkit.getScheduler().runTaskLater(plugin, task, delay);
         }
@@ -58,7 +76,10 @@ public final class FoliaUtil {
     }
 
     public static void cancelTasks(Plugin plugin) {
-        if (!isFolia()) {
+        if (isFolia()) {
+            Bukkit.getAsyncScheduler().cancelTasks(plugin);
+            Bukkit.getGlobalRegionScheduler().cancelTasks(plugin);
+        } else {
             Bukkit.getScheduler().cancelTasks(plugin);
         }
     }
