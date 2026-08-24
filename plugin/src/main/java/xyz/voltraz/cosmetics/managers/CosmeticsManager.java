@@ -307,7 +307,6 @@ public class CosmeticsManager {
         if(cosmetic == null) return;
         PlayerData playerData = PlayerData.getPlayer(player);
         if(playerData.hasCosmeticById(cosmeticId)) return;
-        if(plugin.getUser() == null) return;
         playerData.addCosmetic(cosmetic);
         for(String msg : plugin.getMessages().getStringList("change-token-to-cosmetic")){
             sendMessage(player, msg);
@@ -321,7 +320,6 @@ public class CosmeticsManager {
             return;
         }
         PlayerData playerData = PlayerData.getPlayer(target);
-        if(plugin.getUser() == null) return;
         if(plugin.isPermissions()){
             if(playerData.getCosmeticsPerm().size() == Cosmetic.cosmetics.size()) {
                 sendMessage(sender, plugin.prefix + plugin.getMessages().getString("already-all-unlocked"));
@@ -353,7 +351,6 @@ public class CosmeticsManager {
             sendMessage(sender, plugin.prefix + plugin.getMessages().getString("cosmetic-notfound"));
             return;
         }
-        if(plugin.getUser() == null) return;
         PlayerData playerData = PlayerData.getPlayer(target);
         if(playerData.hasCosmeticById(cosmeticId)){
             sendMessage(sender, plugin.prefix + plugin.getMessages().getString("already-cosmetic"));
@@ -374,7 +371,6 @@ public class CosmeticsManager {
             sendMessage(sender, plugin.prefix + plugin.getMessages().getString("cosmetic-notfound"));
             return;
         }
-        if(plugin.getUser() == null) return;
         PlayerData playerData = PlayerData.getPlayer(target);
         if(!playerData.hasCosmeticById(cosmeticId)){
             for(String msg : plugin.getMessages().getStringList("not-have-cosmetic")) {
@@ -394,7 +390,6 @@ public class CosmeticsManager {
             return;
         }
         PlayerData playerData = PlayerData.getPlayer(target);
-        if(plugin.getUser() == null) return;
         if(plugin.isPermissions()){
             if(playerData.getCosmeticsPerm().size() == 0) {
                 sendMessage(sender, plugin.prefix + plugin.getMessages().getString("already-all-locked"));
@@ -426,7 +421,6 @@ public class CosmeticsManager {
             sendMessage(sender, plugin.prefix + plugin.getMessages().getString("not-exist-token").replace("%id%", tokenId));
             return;
         }
-        if(plugin.getUser() == null) return;
         java.util.HashMap<Integer, ItemStack> leftover = target.getInventory().addItem(token.getItemStack().clone());
         if(!leftover.isEmpty()){
             for(ItemStack item : leftover.values()){
@@ -468,7 +462,6 @@ public class CosmeticsManager {
 
     public void equipCosmetic(Player player, Cosmetic cosmetic, String colorHex){
         PlayerData playerData = PlayerData.getPlayer(player);
-        if(plugin.getUser() == null) return;
         if(!playerData.hasCosmeticById(cosmetic.getId())){
             for(String msg : plugin.getMessages().getStringList("not-have-cosmetic")) {
                 player.sendMessage(msg);
@@ -506,7 +499,6 @@ public class CosmeticsManager {
             return;
         }
         PlayerData playerData = PlayerData.getPlayer(player);
-        if(plugin.getUser() == null) return;
         if(force){
             Cosmetic cosmetic = Cosmetic.getCloneCosmetic(id);
             Cosmetic equip = playerData.getEquip(cosmetic.getCosmeticType());
@@ -574,7 +566,6 @@ public class CosmeticsManager {
             //sendMessage(player, plugin.prefix + plugin.getMessages().getString("not-have-cosmetic"));
             return;
         }
-        if(plugin.getUser() == null) return;
         playerData.setPreviewCosmetic(cosmetic);
     }
 
@@ -587,7 +578,6 @@ public class CosmeticsManager {
             //sendMessage(player, plugin.prefix + plugin.getMessages().getString("not-have-cosmetic"));
             return;
         }
-        if(plugin.getUser() == null) return;
         playerData.setPreviewCosmetic(cosmetic);
     }
 
@@ -602,7 +592,6 @@ public class CosmeticsManager {
             sendMessage(player, plugin.prefix + plugin.getMessages().getString("not-exist-menu").replace("%id%", id));
             return;
         }
-        if(plugin.getUser() == null) return;
         if(!menu.getPermission().isEmpty()){
             if(!player.hasPermission(menu.getPermission())){
                 sendMessage(player, plugin.prefix + plugin.getMessages().getString("no-permission"));
@@ -653,7 +642,6 @@ public class CosmeticsManager {
         }
         if(!(menu instanceof ColoredMenu)) return;
         ColoredMenu coloredMenu = (ColoredMenu) menu;
-        if(plugin.getUser() == null) return;
         switch (menu.getContentMenu().getInventoryType()){
             case HAT:
             case BAG:
@@ -679,7 +667,6 @@ public class CosmeticsManager {
             return;
         }
         FreeColoredMenu freeColoredMenu = (FreeColoredMenu) menu;
-        if(plugin.getUser() == null) return;
         switch (menu.getContentMenu().getInventoryType()){
             case HAT:
             case BAG:
@@ -701,7 +688,6 @@ public class CosmeticsManager {
         PlayerData playerData = PlayerData.getPlayer(player);
         Cosmetic equip = playerData.getEquip(cosmeticType);
         if(equip == null) return;
-        if(plugin.getUser() == null) return;
         CosmeticUnEquipEvent event = new CosmeticUnEquipEvent(player, equip);
         VoltrazCosmetics.getInstance().getServer().getPluginManager().callEvent(event);
         if(event.isCancelled()) return;
@@ -714,7 +700,6 @@ public class CosmeticsManager {
         PlayerData playerData = PlayerData.getPlayer(player);
         Cosmetic equip = playerData.getEquip(cosmeticId);
         if(equip == null) return;
-        if(plugin.getUser() == null) return;
         CosmeticUnEquipEvent event = new CosmeticUnEquipEvent(player, equip);
         VoltrazCosmetics.getInstance().getServer().getPluginManager().callEvent(event);
         if(event.isCancelled()) return;
@@ -727,7 +712,6 @@ public class CosmeticsManager {
         PlayerData playerData = PlayerData.getPlayer(player);
         Token token = Token.getTokenByCosmetic(cosmeticId);
         if(token == null) return false;
-        if(plugin.getUser() == null) return false;
         if(!token.isExchangeable()) {
             return false;
         }
@@ -758,7 +742,6 @@ public class CosmeticsManager {
             return;
         }
         PlayerData playerData = PlayerData.getPlayer(player);
-        if(plugin.getUser() == null) return;
         for(Cosmetic cosmetic : playerData.cosmeticsInUse()){
             if(cosmetic == null) continue;
             CosmeticUnEquipEvent event = new CosmeticUnEquipEvent(player, cosmetic);
@@ -776,7 +759,6 @@ public class CosmeticsManager {
             return;
         }
         PlayerData playerData = PlayerData.getPlayer(player);
-        if(plugin.getUser() == null) return;
         for(Cosmetic cosmetic : playerData.cosmeticsInUse()){
             if(cosmetic == null) continue;
             CosmeticUnEquipEvent event = new CosmeticUnEquipEvent(player, cosmetic);

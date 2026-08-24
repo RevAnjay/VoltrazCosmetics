@@ -81,7 +81,6 @@ public class Citizens {
             xyz.voltraz.cosmetics.cache.NPC npcRegistry = plugin.getNPCsLoader().getNPC(ID, NPCType.CITIZENS);
             if(npcRegistry == null){
                 EntityCache entityCache = EntityCache.getEntityOrCreate(npc.getEntity());
-                if (plugin.getUser() == null) return;
                 Cosmetic cosmetic = Cosmetic.getCloneCosmetic(id);
                 Color color = null;
                 if(colorHex != null) {
@@ -130,7 +129,6 @@ public class Citizens {
 
     public void loadNPC(NPC citizensNPc, xyz.voltraz.cosmetics.cache.NPC npc){
         EntityCache entityCache = EntityCache.getEntityOrCreate(citizensNPc.getEntity());
-        if (plugin.getUser() == null) return;
         entityCache.loadCosmetics(npc.getCosmetics());
         npc.setEntityCache(entityCache);
         npc.setLoad(true);

@@ -235,7 +235,6 @@ public class ZonesManager {
             sendMessage(player, plugin.prefix + "§cSet the Spray Location!");
             return;
         }
-        if(plugin.getUser() == null) return;
         zone.setActive(true);
         sendMessage(player, plugin.prefix + plugin.getMessages().getString("zone-enable").replace("%name%", name));
     }

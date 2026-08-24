@@ -614,10 +614,13 @@ public class Command implements CommandExecutor, TabCompleter {
                         return true;
                 }
             }
-            if(hasPerm(player, "cosmetics.use") || hasPerm(player, "use") || hasPerm(player, "admin")) {
+            if(hasPerm(player, "use") || hasPerm(player, "admin") || player.hasPermission("voltrazcosmetics.use") || player.hasPermission("cosmetics.use") || player.hasPermission("magicosmetics.use") || player.isOp()) {
                 plugin.getCosmeticsManager().openMenu(player, plugin.getMainMenu());
-                if(plugin.getOnExecuteCosmetics().isEmpty()) return true;
-                player.performCommand(plugin.getOnExecuteCosmetics());
+                if(plugin.getOnExecuteCosmetics() != null && !plugin.getOnExecuteCosmetics().isEmpty()) {
+                    player.performCommand(plugin.getOnExecuteCosmetics());
+                }
+            } else {
+                Utils.sendMessage(player, plugin.prefix + messages.getString("no-permission"));
             }
             return true;
         }
