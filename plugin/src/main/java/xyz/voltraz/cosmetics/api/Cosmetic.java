@@ -523,6 +523,16 @@ public abstract class Cosmetic {
             plugin.getLogger().info("Registered cosmetics: " + cosmetics_count);
         }
         cosmetics = newCosmetics;
+        // Register permissions to Bukkit PluginManager so LuckPerms indexes them
+        try {
+            org.bukkit.plugin.PluginManager pm = org.bukkit.Bukkit.getPluginManager();
+            for (Cosmetic cosmetic : cosmetics.values()) {
+                String perm = cosmetic.getPermission();
+                if (perm != null && !perm.isEmpty() && pm.getPermission(perm) == null) {
+                    pm.addPermission(new org.bukkit.permissions.Permission(perm, "Cosmetic access for " + cosmetic.getName(), org.bukkit.permissions.PermissionDefault.FALSE));
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     public String getId() {

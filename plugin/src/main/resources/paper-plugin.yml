@@ -54,3 +54,40 @@ dependencies:
     My_Worlds:
       required: false
       join-classpath: true
+permissions:
+  voltrazcosmetics.use:
+    description: Allows player to open the cosmetics wardrobe menu
+    default: true
+  voltrazcosmetics.admin:
+    description: Full administrative access to VoltrazCosmetics
+    default: op
+  voltrazcosmetics.cosmetic.*:
+    description: Grants access to equip all cosmetics
+    default: op
+    children:
+      voltrazcosmetics.category.hat: true
+      voltrazcosmetics.category.bag: true
+      voltrazcosmetics.category.walking_stick: true
+      voltrazcosmetics.category.balloon: true
+      voltrazcosmetics.category.spray: true
+  voltrazcosmetics.category.hat:
+    description: Grants access to all hat cosmetics
+    default: false
+  voltrazcosmetics.category.bag:
+    description: Grants access to all bag/backpack cosmetics
+    default: false
+  voltrazcosmetics.category.walking_stick:
+    description: Grants access to all walking stick cosmetics
+    default: false
+  voltrazcosmetics.category.balloon:
+    description: Grants access to all balloon cosmetics
+    default: false
+  voltrazcosmetics.category.spray:
+    description: Grants access to all spray cosmetics
+    default: false
+  voltrazcosmetics.tint:
+    description: Allows player to tint/dye cosmetics
+    default: op
+  voltrazcosmetics.zones:
+    description: Allows managing wardrobe zones
+    default: op
