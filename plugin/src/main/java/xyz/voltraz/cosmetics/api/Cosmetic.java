@@ -215,6 +215,9 @@ public abstract class Cosmetic {
                 if(cosmeticsConf.contains("cosmetics." + key + ".permission")){
                     permission = cosmeticsConf.getString("cosmetics." + key + ".permission");
                 }
+                if(permission == null || permission.trim().isEmpty()){
+                    permission = "voltrazcosmetics.cosmetic." + key.toLowerCase();
+                }
                 if(cosmeticsConf.contains("cosmetics." + key + ".url")){
                     String url = cosmeticsConf.getString("cosmetics." + key + ".url");
                     image = Utils.getImage(url);
@@ -650,7 +653,7 @@ public abstract class Cosmetic {
     public boolean hasPermission(Player player){
         if(player == null) return false;
         if(player.isOp()) return true;
-        // Global wildcard: voltrazcosmetics.cosmetic.*, cosmetics.cosmetic.*, etc.
+        // Global wildcard: voltrazcosmetics.cosmetic.*, cosmetics.cosmetic.*, magicosmetics.cosmetic.*
         if(player.hasPermission("voltrazcosmetics.cosmetic.*")
             || player.hasPermission("cosmetics.cosmetic.*")
             || player.hasPermission("magicosmetics.cosmetic.*")
@@ -662,7 +665,7 @@ public abstract class Cosmetic {
             || player.hasPermission("magicosmetics.admin")) {
             return true;
         }
-        // Category wildcards: voltrazcosmetics.category.<type> (e.g. hat, bag, walking_stick, balloon, spray)
+        // Category wildcards: voltrazcosmetics.category.<type> or cosmetics.category.<type>
         if(cosmeticType != null) {
             String typeName = cosmeticType.name().toLowerCase();
             if(player.hasPermission("voltrazcosmetics.category." + typeName)
@@ -673,21 +676,41 @@ public abstract class Cosmetic {
                 || player.hasPermission("magicosmetics." + typeName + ".*")) {
                 return true;
             }
-            // Also support aliases: hats, bags, walking_sticks, wsticks, balloons, sprays
+            // Category aliases
             if(typeName.equals("hat") && (player.hasPermission("voltrazcosmetics.category.hats") || player.hasPermission("cosmetics.category.hats") || player.hasPermission("magicosmetics.category.hats"))) return true;
             if(typeName.equals("bag") && (player.hasPermission("voltrazcosmetics.category.bags") || player.hasPermission("voltrazcosmetics.category.backpacks") || player.hasPermission("cosmetics.category.backpacks") || player.hasPermission("cosmetics.category.bags"))) return true;
             if(typeName.equals("walking_stick") && (player.hasPermission("voltrazcosmetics.category.walking_sticks") || player.hasPermission("voltrazcosmetics.category.wstick") || player.hasPermission("voltrazcosmetics.category.wsticks") || player.hasPermission("cosmetics.category.wsticks"))) return true;
             if(typeName.equals("balloon") && (player.hasPermission("voltrazcosmetics.category.balloons") || player.hasPermission("cosmetics.category.balloons"))) return true;
             if(typeName.equals("spray") && (player.hasPermission("voltrazcosmetics.category.sprays") || player.hasPermission("cosmetics.category.sprays"))) return true;
         }
-        // Specific cosmetic ID wildcard: voltrazcosmetics.cosmetic.<id>
-        if(id != null && (player.hasPermission("voltrazcosmetics.cosmetic." + id.toLowerCase()) || player.hasPermission("cosmetics.cosmetic." + id.toLowerCase()))) {
-            return true;
+        // Specific cosmetic ID
+        if(id != null) {
+            String idLower = id.toLowerCase();
+            if(player.hasPermission("voltrazcosmetics.cosmetic." + idLower)
+                || player.hasPermission("cosmetics.cosmetic." + idLower)
+                || player.hasPermission("magicosmetics.cosmetic." + idLower)
+                || player.hasPermission("voltrazcosmetics." + idLower)
+                || player.hasPermission("cosmetics." + idLower)
+                || player.hasPermission("magicosmetics." + idLower)) {
+                return true;
+            }
         }
-        if(permission == null || permission.isEmpty()) return false;
-        return player.hasPermission(permission);
+        if(permission != null && !permission.isEmpty()) {
+            if(player.hasPermission(permission)) return true;
+            // Legacy / alternate prefix checks if yaml had magicosmetics.<something> or voltrazcosmetics.<something>
+            if(permission.startsWith("magicosmetics.")) {
+                String sub = permission.substring("magicosmetics.".length());
+                if(player.hasPermission("voltrazcosmetics." + sub) || player.hasPermission("cosmetics." + sub)) return true;
+            } else if(permission.startsWith("voltrazcosmetics.")) {
+                String sub = permission.substring("voltrazcosmetics.".length());
+                if(player.hasPermission("magicosmetics." + sub) || player.hasPermission("cosmetics." + sub)) return true;
+            } else if(permission.startsWith("cosmetics.")) {
+                String sub = permission.substring("cosmetics.".length());
+                if(player.hasPermission("voltrazcosmetics." + sub) || player.hasPermission("magicosmetics." + sub)) return true;
+            }
+        }
+        return false;
     }
-
     public boolean isTexture() {
         return texture;
     }
