@@ -52,10 +52,12 @@ public class Bag extends Cosmetic {
     }
 
     public void active(Entity entity){
-        if(entity == null) return;
+        if(entity == null || entity.isDead() || !entity.isValid()) {
+            remove();
+            return;
+        }
         if(backPackEngine != null){
             if(backPackEngine.getBackPackUniqueId() == null) {
-                if(entity.isDead()) return;
                 remove();
                 backPackEngine.spawnModel(entity);
                 if (isColored()) {
@@ -65,20 +67,18 @@ public class Bag extends Cosmetic {
             return;
         }
         if(bag2 == null){
-            if(entity.isDead()) {
-                remove();
-                return;
-            }
             remove();
             bag2 = VoltrazCosmetics.getInstance().getVersion().createEntityBag(entity, distance);
-            bag2.spawnBag();
-            //
+            if(bag2 != null) {
+                bag2.spawnBag();
+            }
         }
-        bag2.addPassenger();
-        bag2.setItemOnHelmet(getItemColor());
-        bag2.lookEntity();
+        if(bag2 != null) {
+            bag2.addPassenger();
+            bag2.setItemOnHelmet(getItemColor());
+            bag2.lookEntity();
+        }
     }
-
     @Override
     public void lendToEntity() {
         if(bag1 == null){
@@ -122,6 +122,9 @@ public class Bag extends Cosmetic {
 
     @Override
     public void update() {
+        if(player == null || !player.isOnline()) {
+            return;
+        }
         if(lendEntity != null){
             lendToEntity();
             return;
@@ -130,13 +133,14 @@ public class Bag extends Cosmetic {
             remove();
             return;
         }
+        if(player.isDead() || player.getGameMode() == GameMode.SPECTATOR) {
+            remove();
+            return;
+        }
         if(backPackEngine != null){
             if(backPackEngine.getBackPackUniqueId() == null) {
-                if(player.isDead()) return;
-                if(player.getGameMode() == GameMode.SPECTATOR) return;
                 remove();
                 backPackEngine.spawnModel(player);
-
                 if (isColored()) {
                     backPackEngine.tintModel(player, getColor());
                 }
@@ -144,28 +148,26 @@ public class Bag extends Cosmetic {
             return;
         }
         if(bag1 == null){
-            if(player.isDead()) return;
-            if(player.getGameMode() == GameMode.SPECTATOR) return;
-
             remove();
             bag1 = VoltrazCosmetics.getInstance().getVersion().createPlayerBag(player, getDistance(), height, getItemColor(player), getBagForMe() != null ? getItemColorForMe(player) : null, isDisplay);
-            if(hide){
-                hideSelf(false);
+            if(bag1 != null) {
+                if(hide){
+                    hideSelf(false);
+                }
+                bag1.spawn(false);
             }
-            bag1.spawn(false);
         }
-        if(player.getLocation().getPitch() >= space && space != 0) {
-            if(!bag1.getHideViewers().contains(player.getUniqueId()))
-                bag1.addHideViewer(player);
-        }else {
-            if(bag1.getHideViewers().contains(player.getUniqueId()))
-                bag1.removeHideViewer(player);
+        if(bag1 != null) {
+            if(player.getLocation().getPitch() >= space && space != 0) {
+                if(!bag1.getHideViewers().contains(player.getUniqueId()))
+                    bag1.addHideViewer(player);
+            } else {
+                if(bag1.getHideViewers().contains(player.getUniqueId()))
+                    bag1.removeHideViewer(player);
+            }
+            bag1.lookEntity(player.getLocation().getYaw(), player.getLocation().getPitch(), true);
         }
-        //bag1.addPassenger(true);
-        //bag1.lookEntity(player.getLocation().getYaw(), player.getLocation().getPitch(), true);
-        bag1.lookEntity(player.getLocation().getYaw(), player.getLocation().getPitch(), true);
     }
-
     @Override
     public void remove() {
         if(backPackEngine != null) {

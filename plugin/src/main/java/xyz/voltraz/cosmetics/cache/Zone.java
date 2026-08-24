@@ -286,7 +286,7 @@ public class Zone {
     }
 
     public boolean isInZone(Location location){
-        if(!active){
+        if(!active || cuboid == null || location == null || location.getWorld() == null){
             return false;
         }
         return detectLocation(location, cuboid);

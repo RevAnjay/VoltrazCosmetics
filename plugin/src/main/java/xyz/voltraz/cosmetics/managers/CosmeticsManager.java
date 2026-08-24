@@ -103,68 +103,81 @@ public class CosmeticsManager {
     public void runTasks(){
             if(otherCosmetics == null){
             otherCosmetics = FoliaUtil.runTaskTimer(plugin, () -> {
-                for(PlayerData playerData : PlayerData.players.values()){
-                    if(playerData.getOfflinePlayer() == null) continue;
-                    Player player = playerData.getOfflinePlayer().getPlayer();
-                    if(player == null) continue;
-                    boolean needsCosmeticUpdate = playerData.hasActiveCosmetics();
-                    boolean needsZoneUpdate = playerData.getZone() != null || !Zone.zones.isEmpty();
-                    // Skip players that have nothing to update
-                    if(!needsCosmeticUpdate && !needsZoneUpdate) continue;
-                    if(needsCosmeticUpdate) playerData.activeCosmetics(player);
-                    if(needsZoneUpdate) playerData.enterZone(player);
-                }
+                try {
+                    for(PlayerData playerData : PlayerData.players.values()){
+                        if(playerData == null || playerData.getOfflinePlayer() == null) continue;
+                        Player player = playerData.getOfflinePlayer().getPlayer();
+                        if(player == null || !player.isOnline()) continue;
+                        boolean needsCosmeticUpdate = playerData.hasActiveCosmetics();
+                        boolean needsZoneUpdate = playerData.getZone() != null || !Zone.zones.isEmpty();
+                        if(!needsCosmeticUpdate && !needsZoneUpdate) continue;
+                        try {
+                            if(needsCosmeticUpdate) playerData.activeCosmetics(player);
+                            if(needsZoneUpdate) playerData.enterZone(player);
+                        } catch (Exception e) {
+                            // Silently ignore cosmetic tick errors for invalid/disconnecting players
+                        }
+                    }
+                } catch (Exception ignored) {}
             }, 5L, 4L);
         }
         if(balloons == null) {
             final int[] entityCleanupCounter = {0};
             balloons = FoliaUtil.runTaskTimer(plugin, () -> {
-                for(PlayerData playerData : PlayerData.players.values()){
-                    if(playerData.getOfflinePlayer() == null) continue;
-                    if(playerData.getOfflinePlayer().getPlayer() == null) continue;
-                    playerData.activeBalloon();
-                }
-                for(EntityCache entityCache : EntityCache.entities.values()){
-                    entityCache.activeCosmetics();
-                }
-                if(++entityCleanupCounter[0] >= 50) {
-                    entityCleanupCounter[0] = 0;
-                    EntityCache.cleanupInvalid();
-                    // Periodic cleanup of orphaned PlayerData entries (players no longer online)
-                    // Save data before removing to prevent loss if quit handler crashed
-                    PlayerData.players.entrySet().removeIf(entry -> {
-                        Player p = Bukkit.getPlayer(entry.getKey());
-                        if(p == null || !p.isOnline()) {
-                            PlayerData orphan = entry.getValue();
-                            // Skip entries that have no offlinePlayer set — likely still loading
-                            if(orphan.getOfflinePlayer() == null) return false;
-                            try {
-                                plugin.getSql().savePlayerAsync(orphan);
-                            } catch (Exception e) {
-                                plugin.getLogger().warning("Failed to save orphaned PlayerData for " + entry.getKey() + ": " + e.getMessage());
+                try {
+                    for(PlayerData playerData : PlayerData.players.values()){
+                        if(playerData == null || playerData.getOfflinePlayer() == null) continue;
+                        Player player = playerData.getOfflinePlayer().getPlayer();
+                        if(player == null || !player.isOnline()) continue;
+                        try {
+                            playerData.activeBalloon();
+                        } catch (Exception ignored) {}
+                    }
+                    for(EntityCache entityCache : EntityCache.entities.values()){
+                        if(entityCache == null) continue;
+                        try {
+                            entityCache.activeCosmetics();
+                        } catch (Exception ignored) {}
+                    }
+                    if(++entityCleanupCounter[0] >= 50) {
+                        entityCleanupCounter[0] = 0;
+                        EntityCache.cleanupInvalid();
+                        PlayerData.players.entrySet().removeIf(entry -> {
+                            Player p = Bukkit.getPlayer(entry.getKey());
+                            if(p == null || !p.isOnline()) {
+                                PlayerData orphan = entry.getValue();
+                                if(orphan == null || orphan.getOfflinePlayer() == null) return false;
+                                try {
+                                    plugin.getSql().savePlayerAsync(orphan);
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Failed to save orphaned PlayerData for " + entry.getKey() + ": " + e.getMessage());
+                                }
+                                return true;
                             }
-                            return true;
-                        }
-                        return false;
-                    });
-                }
+                            return false;
+                        });
+                    }
+                } catch (Exception ignored) {}
             }, 0L, 4L);
         }
         if(npcTask == null && !NPC.npcs.isEmpty()) {
             final int[] npcAngle = {0};
             npcTask = FoliaUtil.runTaskTimer(plugin, () -> {
-                if(NPC.npcs.isEmpty()) {
-                    FoliaUtil.cancel(npcTask);
-                    npcTask = null;
-                    return;
-                }
-                for(Player player : Bukkit.getOnlinePlayers()){
-                    NPC npc = plugin.getVersion().getNPC(player);
-                    if(npc == null) continue;
-                    npc.lookNPC(player, npcAngle[0]);
-                }
-                npcAngle[0] = npcAngle[0] + 10;
-            }, plugin.getConfig().getLong("npc-rotation"), plugin.getConfig().getLong("npc-rotation"));
+                try {
+                    if(NPC.npcs.isEmpty()) {
+                        FoliaUtil.cancel(npcTask);
+                        npcTask = null;
+                        return;
+                    }
+                    for(Player player : Bukkit.getOnlinePlayers()){
+                        if(player == null || !player.isOnline()) continue;
+                        NPC npc = plugin.getVersion().getNPC(player);
+                        if(npc == null) continue;
+                        npc.lookNPC(player, npcAngle[0]);
+                    }
+                    npcAngle[0] = npcAngle[0] + 10;
+                } catch (Exception ignored) {}
+            }, plugin.getConfig().getLong("npc-rotation", 20L), plugin.getConfig().getLong("npc-rotation", 20L));
         }
         if(autoSaveTask == null) {
             // Auto-save dirty player data asynchronously every 5 minutes (6000 ticks)
