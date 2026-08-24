@@ -648,6 +648,42 @@ public abstract class Cosmetic {
     }
 
     public boolean hasPermission(Player player){
+        if(player == null) return false;
+        if(player.isOp()) return true;
+        // Global wildcard: voltrazcosmetics.cosmetic.*, cosmetics.cosmetic.*, etc.
+        if(player.hasPermission("voltrazcosmetics.cosmetic.*")
+            || player.hasPermission("cosmetics.cosmetic.*")
+            || player.hasPermission("magicosmetics.cosmetic.*")
+            || player.hasPermission("voltrazcosmetics.*")
+            || player.hasPermission("cosmetics.*")
+            || player.hasPermission("magicosmetics.*")
+            || player.hasPermission("voltrazcosmetics.admin")
+            || player.hasPermission("cosmetics.admin")
+            || player.hasPermission("magicosmetics.admin")) {
+            return true;
+        }
+        // Category wildcards: voltrazcosmetics.category.<type> (e.g. hat, bag, walking_stick, balloon, spray)
+        if(cosmeticType != null) {
+            String typeName = cosmeticType.name().toLowerCase();
+            if(player.hasPermission("voltrazcosmetics.category." + typeName)
+                || player.hasPermission("cosmetics.category." + typeName)
+                || player.hasPermission("magicosmetics.category." + typeName)
+                || player.hasPermission("voltrazcosmetics." + typeName + ".*")
+                || player.hasPermission("cosmetics." + typeName + ".*")
+                || player.hasPermission("magicosmetics." + typeName + ".*")) {
+                return true;
+            }
+            // Also support aliases: hats, bags, walking_sticks, wsticks, balloons, sprays
+            if(typeName.equals("hat") && (player.hasPermission("voltrazcosmetics.category.hats") || player.hasPermission("cosmetics.category.hats") || player.hasPermission("magicosmetics.category.hats"))) return true;
+            if(typeName.equals("bag") && (player.hasPermission("voltrazcosmetics.category.bags") || player.hasPermission("voltrazcosmetics.category.backpacks") || player.hasPermission("cosmetics.category.backpacks") || player.hasPermission("cosmetics.category.bags"))) return true;
+            if(typeName.equals("walking_stick") && (player.hasPermission("voltrazcosmetics.category.walking_sticks") || player.hasPermission("voltrazcosmetics.category.wstick") || player.hasPermission("voltrazcosmetics.category.wsticks") || player.hasPermission("cosmetics.category.wsticks"))) return true;
+            if(typeName.equals("balloon") && (player.hasPermission("voltrazcosmetics.category.balloons") || player.hasPermission("cosmetics.category.balloons"))) return true;
+            if(typeName.equals("spray") && (player.hasPermission("voltrazcosmetics.category.sprays") || player.hasPermission("cosmetics.category.sprays"))) return true;
+        }
+        // Specific cosmetic ID wildcard: voltrazcosmetics.cosmetic.<id>
+        if(id != null && (player.hasPermission("voltrazcosmetics.cosmetic." + id.toLowerCase()) || player.hasPermission("cosmetics.cosmetic." + id.toLowerCase()))) {
+            return true;
+        }
         if(permission == null || permission.isEmpty()) return false;
         return player.hasPermission(permission);
     }

@@ -426,8 +426,20 @@ public class PlayerData {
     public boolean hasCosmeticById(String id) {
         VoltrazCosmetics plugin = VoltrazCosmetics.getInstance();
         Cosmetic cosmetic = Cosmetic.getCosmetic(id);
+        if(cosmetic == null) return false;
+        Player player = getOfflinePlayer().getPlayer();
+        if(player != null && (player.hasPermission("voltrazcosmetics.cosmetic.*")
+            || player.hasPermission("cosmetics.cosmetic.*")
+            || player.hasPermission("voltrazcosmetics.*")
+            || player.hasPermission("cosmetics.*")
+            || player.isOp())) {
+            return true;
+        }
+        if(player != null && cosmetic.hasPermission(player)) {
+            return true;
+        }
         if(plugin.isPermissions() && !cosmetic.getPermission().isEmpty()) {
-            return cosmetic.hasPermission(getOfflinePlayer().getPlayer());
+            return cosmetic.hasPermission(player);
         }
         return cosmetics.containsKey(id);
     }
